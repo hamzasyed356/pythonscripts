@@ -67,6 +67,10 @@ def fetch_temp_setting():
     except Exception as e:
         print(f"Error fetching temp settings: {e}")
 
+# Utility function to convert datetime to string
+def datetime_to_str(dt):
+    return dt.strftime('%Y-%m-%d %H:%M:%S')
+
 # MQTT callbacks
 def on_connect(client, userdata, flags, rc):
     print(f"Connected to MQTT broker with code {rc}")
@@ -178,7 +182,7 @@ def upload_unpublished_data():
             for row in data:
                 ids.append(row[0])  # Assuming id is the first column
                 formatted_data.append({
-                    'timestamp': row[1],
+                    'timestamp': row[1].strftime('%Y-%m-%d %H:%M:%S'),
                     'cstr_temp': row[2],
                     'cstr_level': row[3],
                     'cstr_ph': row[4],
@@ -236,6 +240,8 @@ def main_loop():
     try:
         while True:
             if all(value is not None for value in sensor_data.values()):
+                sensor_data['timestamp'] = datetime_to_str(sensor_data['timestamp'])
+                temp_setting['timestamp'] = datetime_to_str(temp_setting['timestamp'])
                 success, flux = save_to_database(sensor_data, temp_setting)
                 if success:
                     # Publish flux to MQTT topic
