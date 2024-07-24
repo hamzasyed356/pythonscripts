@@ -44,10 +44,23 @@ sensor_data = {
 }
 
 temp_setting = {
-    'set_temp' : None, 
-    'over_duration' : None, 
-    'temp_change' : None
+    'set_temp': None,
+    'over_duration': None,
+    'temp_change': None
 }
+
+def fetch_temp_setting():
+    try:
+        conn = psycopg2.connect(**DATABASE_CONFIG)
+        cursor = conn.cursor()
+        cursor.execute("SELECT set_temp, over_duration, temp_change FROM temp_setting ORDER BY timestamp DESC LIMIT 1")
+        result = cursor.fetchone()
+        conn.close()
+        if result:
+            temp_setting['set_temp'], temp_setting['over_duration'], temp_setting['temp_change'] = result
+        print("Fetched initial temp settings:", temp_setting)
+    except Exception as e:
+        print(f"Error fetching temp settings: {e}")
 
 # MQTT callbacks
 def on_connect(client, userdata, flags, rc):
@@ -128,7 +141,7 @@ def save_to_database(data):
         INSERT INTO temp_setting (timestamp, set_temp, over_duration, temp_change)
         VALUES (%s, %s, %s, %s)
         '''
-        cursor.execute(insert_query2, (data['timestamp'], data['set_temp'], data['over_duration'], data['temp_change']))
+        cursor.execute(insert_query2, (data['timestamp'], temp_setting['set_temp'], temp_setting['over_duration'], temp_setting['temp_change']))
                 
         conn.commit()
         cursor.close()
@@ -208,6 +221,8 @@ def main_loop():
 
     client.connect(MQTT_BROKER, MQTT_PORT, 60)
     client.loop_start()
+
+    fetch_temp_setting()  # Fetch initial temp settings from the database
 
     try:
         while True:
