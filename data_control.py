@@ -5,19 +5,24 @@ import time
 from datetime import datetime, timedelta
 import requests
 from supabase import create_client, Client
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Database configuration
 DATABASE_CONFIG = {
     'dbname': 'sensordata',
     'user': 'postgres',
-    'password': '399584',
+    'password': os.environ.get('DB_PASSWORD'),
     'host': 'localhost',  # Assuming the database is hosted on the Raspberry Pi
     'port': '5432'        # Default PostgreSQL port
 }
 
 # Supabase configuration
-SUPABASE_URL = 'https://wfjjeelahvijugiuvcav.supabase.co'
-SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmamplZWxhaHZpanVnaXV2Y2F2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE4NjEwMDEsImV4cCI6MjAzNzQzNzAwMX0.smt8L3oket0eVz-VSO1P1SOwq0qAV5LSO8PL_HyhK9k'
+SUPABASE_URL = os.environ.get('SUPABASE_URL')
+SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
 
 # Create Supabase client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -126,7 +131,7 @@ def calculate_flux(current_level, conn):
         return 0
 
 # Function to save data to the PostgreSQL database
-def save_to_database(data):
+def save_to_database(data, temp_data):
     try:
         conn = psycopg2.connect(**DATABASE_CONFIG)
         flux = calculate_flux(data['effluent_level'], conn)
@@ -141,7 +146,7 @@ def save_to_database(data):
         INSERT INTO temp_setting (timestamp, set_temp, over_duration, temp_change)
         VALUES (%s, %s, %s, %s)
         '''
-        cursor.execute(insert_query2, (data['timestamp'], temp_setting['set_temp'], temp_setting['over_duration'], temp_setting['temp_change']))
+        cursor.execute(insert_query2, (temp_data['timestamp'], temp_data['set_temp'], temp_data['over_duration'], temp_data['temp_change']))
                 
         conn.commit()
         cursor.close()
@@ -210,8 +215,12 @@ def update_published_status(ids):
 
 # Function to upload data to Supabase
 def upload_data_to_supabase(data):
-    response = supabase.table('sensor_data').insert(data).execute()
-    return response
+    try:
+        response = supabase.table('sensor_data').insert(data).execute()
+        return response
+    except Exception as e:
+        print(f"Error uploading data to Supabase: {e}")
+        return None
 
 # Main loop to periodically save data
 def main_loop():
@@ -227,7 +236,7 @@ def main_loop():
     try:
         while True:
             if all(value is not None for value in sensor_data.values()):
-                success, flux = save_to_database(sensor_data)
+                success, flux = save_to_database(sensor_data, temp_setting)
                 if success:
                     # Publish flux to MQTT topic
                     client.publish(FLUX_TOPIC, json.dumps({'flux': flux}))
