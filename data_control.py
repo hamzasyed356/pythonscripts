@@ -16,8 +16,8 @@ DATABASE_CONFIG = {
 }
 
 # Supabase configuration
-SUPABASE_URL = 'https://your-supabase-url'
-SUPABASE_KEY = 'your-supabase-key'
+SUPABASE_URL = 'https://wfjjeelahvijugiuvcav.supabase.co'
+SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmamplZWxhaHZpanVnaXV2Y2F2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE4NjEwMDEsImV4cCI6MjAzNzQzNzAwMX0.smt8L3oket0eVz-VSO1P1SOwq0qAV5LSO8PL_HyhK9k'
 
 # Create Supabase client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -25,7 +25,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # MQTT configuration
 MQTT_BROKER = '192.168.18.19'
 MQTT_PORT = 1883
-MQTT_TOPICS = ['cstr-level', 'cstr-temp', 'cstr-ph', 'cstr-orp', 'cstr-ec', 'cstr-tds', 'mtank-level', 'mtank-temp', 'effluent-level']
+MQTT_TOPICS = ['cstr-level', 'cstr-temp', 'cstr-ph', 'cstr-orp', 'cstr-ec', 'cstr-tds', 'mtank-level', 'mtank-temp', 'effluent-level', 'set-temp', 'over-duration', 'temp-change']
 FLUX_TOPIC = 'flux'
 
 # Global variables to store sensor data
@@ -43,6 +43,12 @@ sensor_data = {
     'published': False
 }
 
+temp_setting = {
+    'set_temp' : None, 
+    'over_duration' : None, 
+    'temp_change' : None
+}
+
 # MQTT callbacks
 def on_connect(client, userdata, flags, rc):
     print(f"Connected to MQTT broker with code {rc}")
@@ -51,9 +57,11 @@ def on_connect(client, userdata, flags, rc):
 
 def on_message(client, userdata, msg):
     global sensor_data
+    global temp_setting
     topic = msg.topic
     payload = json.loads(msg.payload.decode())
     sensor_data['timestamp'] = datetime.utcnow()
+    temp_setting['timestamp'] = datetime.utcnow()
 
     if topic == 'cstr-temp':
         sensor_data['cstr_temp'] = float(payload)
@@ -73,6 +81,12 @@ def on_message(client, userdata, msg):
         sensor_data['mtank_level'] = float(payload)
     elif topic == 'effluent-level':
         sensor_data['effluent_level'] = float(payload)
+    elif topic == 'set-temp':
+        temp_setting['set_temp'] = float(payload)
+    elif topic == 'over-duration':
+        temp_setting['over_duration'] = float(payload)
+    elif topic == 'temp-change':
+        temp_setting['temp_change'] = float(payload)
 
 # Function to calculate flux
 def calculate_flux(current_level, conn):
@@ -109,6 +123,13 @@ def save_to_database(data):
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         '''
         cursor.execute(insert_query, (data['timestamp'], data['cstr_temp'], data['cstr_level'], data['cstr_ph'], data['cstr_orp'], data['cstr_ec'], data['cstr_tds'], data['mtank_temp'], data['mtank_level'], data['effluent_level'], flux, data['published']))
+        
+        insert_query2 = '''
+        INSERT INTO temp_setting (timestamp, set_temp, over_duration, temp_change)
+        VALUES (%s, %s, %s, %s)
+        '''
+        cursor.execute(insert_query2, (data['timestamp'], data['set_temp'], data['over_duration'], data['temp_change']))
+                
         conn.commit()
         cursor.close()
         conn.close()
