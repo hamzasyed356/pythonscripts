@@ -50,21 +50,26 @@ def get_set_temperatures():
 # MQTT callbacks
 def on_connect(client, userdata, flags, rc):
     print(f"Connected to MQTT broker with code {rc}")
-    for topic in MQTT_TOPICS:
+    for topic in MQTT_TOPICS + CONTROL_TOPICS:
         client.subscribe(topic)
 
 def on_message(client, userdata, msg):
-    global cstr_temp, mtank_temp
+    global cstr_temp, mtank_temp, last_states
 
     topic = msg.topic
-    payload = json.loads(msg.payload.decode())
+    payload = msg.payload.decode()
 
-    if topic == 'cstr-temp':
-        cstr_temp = float(payload)
-    elif topic == 'mtank-temp':
-        mtank_temp = float(payload)
+    if topic in MQTT_TOPICS:
+        payload = json.loads(payload)
 
-    control_relays(client)
+        if topic == 'cstr-temp':
+            cstr_temp = float(payload)
+        elif topic == 'mtank-temp':
+            mtank_temp = float(payload)
+
+        control_relays(client)
+    elif topic in CONTROL_TOPICS:
+        last_states[topic] = payload
 
 # Function to calculate the current setpoint temperature
 def calculate_setpoint(start_time, set_temp, initial_temp, over_duration, temp_change):
@@ -85,7 +90,7 @@ def control_relays(client):
             return
         start_time = time.time()
     
-    initial_temp = 35  # Assume an initial starting temperature; adjust as needed
+    initial_temp = 20  # Assume an initial starting temperature; adjust as needed
     current_setpoint = calculate_setpoint(start_time, set_cstr_temp, initial_temp, over_duration, temp_change)
 
     if cstr_temp is not None and mtank_temp is not None:
