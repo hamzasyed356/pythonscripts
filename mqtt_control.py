@@ -26,6 +26,14 @@ over_duration = None
 temp_change = None
 start_time = time.time()
 
+# Global variables to store the last states of the relays
+last_states = {
+    'cstr/heater1': None,
+    'cstr/heater2': None,
+    'mtank/out': None,
+    'cstr/in': None
+}
+
 # Function to get set temperatures from the database
 def get_set_temperatures():
     try:
@@ -68,7 +76,7 @@ def calculate_setpoint(start_time, set_temp, initial_temp, over_duration, temp_c
 
 # Function to control relays based on sensor data
 def control_relays(client):
-    global set_cstr_temp, over_duration, temp_change, start_time
+    global set_cstr_temp, over_duration, temp_change, start_time, last_states
 
     if set_cstr_temp is None:
         set_cstr_temp, over_duration, temp_change = get_set_temperatures()
@@ -77,26 +85,41 @@ def control_relays(client):
             return
         start_time = time.time()
     
-    initial_temp = 20  # Assume an initial starting temperature; adjust as needed
+    initial_temp = 35  # Assume an initial starting temperature; adjust as needed
     current_setpoint = calculate_setpoint(start_time, set_cstr_temp, initial_temp, over_duration, temp_change)
 
     if cstr_temp is not None and mtank_temp is not None:
+        # Determine relay states
+        heater1_state = 'off'
+        heater2_state = 'off'
+        mtank_out_state = 'off'
+        cstr_in_state = 'on'
+
         if cstr_temp <= current_setpoint - 5:
-            client.publish('cstr/heater1', 'on')
-            client.publish('cstr/heater2', 'on')
+            heater1_state = 'on'
+            heater2_state = 'on'
         elif cstr_temp <= current_setpoint - 1:
-            client.publish('cstr/heater1', 'on')
-            client.publish('cstr/heater2', 'off')
-        else:
-            client.publish('cstr/heater1', 'off')
-            client.publish('cstr/heater2', 'off')
+            heater1_state = 'on'
 
         if abs(mtank_temp - cstr_temp) >= 5:
-            client.publish('mtank/out', 'on')
-            client.publish('cstr/in', 'off')
+            mtank_out_state = 'on'
+            cstr_in_state = 'off'
         elif abs(mtank_temp - cstr_temp) <= 1:
-            client.publish('mtank/out', 'off')
-            client.publish('cstr/in', 'on')
+            cstr_in_state = 'on'
+
+        # Publish only if state has changed
+        if last_states['cstr/heater1'] != heater1_state:
+            client.publish('cstr/heater1', heater1_state)
+            last_states['cstr/heater1'] = heater1_state
+        if last_states['cstr/heater2'] != heater2_state:
+            client.publish('cstr/heater2', heater2_state)
+            last_states['cstr/heater2'] = heater2_state
+        if last_states['mtank/out'] != mtank_out_state:
+            client.publish('mtank/out', mtank_out_state)
+            last_states['mtank/out'] = mtank_out_state
+        if last_states['cstr/in'] != cstr_in_state:
+            client.publish('cstr/in', cstr_in_state)
+            last_states['cstr/in'] = cstr_in_state
 
 # Initialize MQTT client
 client = mqtt.Client()

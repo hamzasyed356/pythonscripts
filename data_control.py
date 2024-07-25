@@ -289,7 +289,7 @@ def main_loop():
     fetch_temp_setting()
 
     while True:
-        time.sleep(60)  # Check every minute
+        time.sleep(30)  # Check every minute
 
         # Save data to local database
         success, flux = save_to_database(sensor_data, temp_setting)
