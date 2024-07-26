@@ -116,7 +116,7 @@ def on_message(client, userdata, msg):
 def calculate_flux(current_level, conn):
     try:
         cursor = conn.cursor()
-        one_minute_ago = datetime.utcnow() - timedelta(minutes=1)
+        one_minute_ago = datetime.now() - timedelta(minutes=1)
         query = '''
         SELECT effluent_level 
         FROM sensor_data 

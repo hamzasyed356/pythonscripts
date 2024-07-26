@@ -170,6 +170,7 @@ def save_settings(set_temp_input, over_duration_input, temp_change_input):
 
 # Function to open the settings window
 def open_settings():
+    print("Opening settings window...")  # Debugging line
     settings_window = CTkToplevel()
     settings_window.title("Settings")
     settings_window.geometry("300x200")
@@ -207,6 +208,7 @@ def download_data(from_date_input, to_date_input):
 
 # Function to open the download window
 def open_download():
+    print("Opening download window...")  # Debugging line
     download_window = CTkToplevel()
     download_window.title("Download Data")
     download_window.geometry("300x200")
