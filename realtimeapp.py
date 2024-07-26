@@ -241,8 +241,8 @@ settings_menu.add_command(label="Settings", command=open_settings)
 settings_menu.add_command(label="Download", command=open_download)
 
 # Load logos
-left_logo_image = Image.open("nust-logo.png")  # Replace with the actual path to your left logo
-right_logo_image = Image.open("resurgence_logo.png")  # Replace with the actual path to your right logo
+left_logo_image = Image.open("/home/resurgence/pythonscripts/nust-logo.png")  # Replace with the actual path to your left logo
+right_logo_image = Image.open("/home/resurgence/pythonscripts/resurgence_logo.png")  # Replace with the actual path to your right logo
 
 left_logo_image = left_logo_image.resize((100, 100), Image.LANCZOS)  # Resize image if needed
 right_logo_image = right_logo_image.resize((480, 75), Image.LANCZOS)  # Resize image if needed
