@@ -159,9 +159,10 @@ def save_settings(set_temp_input, over_duration_input, temp_change_input):
             dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT
         )
         now = datetime.now
+        published=False
         cursor = conn.cursor()
         cursor.execute("INSERT INTO temp_setting (timestamp, set_temp, over_duration, temp_change, published) VALUES (%s, %s, %s, %s, %s)",
-                       (now, set_temp, over_duration, temp_change, False))
+                       (now, set_temp, over_duration, temp_change, published))
         conn.commit()
         cursor.close()
         conn.close()
