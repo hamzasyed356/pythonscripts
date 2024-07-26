@@ -158,11 +158,12 @@ def save_settings(set_temp_input, over_duration_input, temp_change_input):
         conn = psycopg2.connect(
             dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT
         )
-        now = datetime.now
-        published=False
+        now = datetime.now()  # Corrected to call the now function
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO temp_setting (timestamp, set_temp, over_duration, temp_change, published) VALUES (%s, %s, %s, %s, %s)",
-                       (now, set_temp, over_duration, temp_change, published))
+        cursor.execute(
+            "INSERT INTO temp_setting (timestamp, set_temp, over_duration, temp_change, published) VALUES (%s, %s, %s, %s, %s)",
+            (now, set_temp, over_duration, temp_change, False)  # Corrected False to be a Python boolean
+        )
         conn.commit()
         cursor.close()
         conn.close()
