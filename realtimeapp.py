@@ -1,33 +1,32 @@
+from customtkinter import *
+from PIL import Image
 import tkinter as tk
 from tkinter import Menu, filedialog, messagebox
-from tkinter.ttk import Frame, Label, Entry, Button
-from tkcalendar import DateEntry  # Import DateEntry from tkcalendar
-from datetime import datetime, timedelta
 import psycopg2  # Using psycopg2 for PostgreSQL
 import pandas as pd
 import matplotlib.pyplot as plt
+from tkcalendar import DateEntry  # Import DateEntry from tkcalendar
+from datetime import datetime, timedelta
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import paho.mqtt.client as mqtt
-from PIL import Image, ImageTk
 
 # MQTT Configuration
 MQTT_BROKER = "192.168.18.19"
 MQTT_PORT = 1883
 MQTT_TOPICS = {
-    "cstr_ph": "cstr-ph",
-    "cstr_ec": "cstr-ec",
-    "cstr_tds": "cstr-tds",
-    "cstr_orp": "cstr-orp",
-    "cstr_temp": "cstr-temp",
-    "cstr_level": "cstr-level",
-    "mtank_temp": "mtank-temp",
-    "mtank_level": "mtank-level",
-    "mtank_weight": "mtank-weight",
-    "effluent_weight": "effluent-weight",
-    "effluent_level": "effluent-level",
+    "cstr-ph": "cstr_ph",
+    "cstr-ec": "cstr_ec",
+    "cstr-tds": "cstr_tds",
+    "cstr-orp": "cstr_orp",
+    "cstr-temp": "cstr_temp",
+    "cstr-level": "cstr_level",
+    "mtank-temp": "mtank_temp",
+    "mtank-level": "mtank_level",
+    "mtank-weight": "mtank_weight",
+    "effluent-weight": "effluent_weight",
+    "effluent-level": "effluent_level",
     "flux": "flux"
 }
-
 
 # Initialize MQTT values storage
 mqtt_values = {topic: None for topic in MQTT_TOPICS.keys()}
@@ -54,8 +53,8 @@ mqtt_client.loop_start()
 DB_NAME = "sensordata"
 DB_USER = "postgres"
 DB_PASSWORD = "399584"
-DB_HOST = "localhost"
-DB_PORT = "5432"
+DB_HOST = "localhost"  # Replace with your host if it's not local
+DB_PORT = "5432"  # Default PostgreSQL port
 
 # Function to fetch data and display time series graph
 def fetch_and_display_timeseries(param, from_date, to_date, canvas, figure):
@@ -89,32 +88,32 @@ def save_graph_as_image(figure):
 
 # Function to open the time series window
 def open_timeseries_window(param):
-    timeseries_window = tk.Toplevel()
+    timeseries_window = CTkToplevel()
     timeseries_window.title(f"Time Series Graph for {param}")
     timeseries_window.geometry("800x600")
     timeseries_window.grab_set()  # Ensure the window is modal
 
-    input_frame = Frame(timeseries_window)
+    input_frame = CTkFrame(timeseries_window)
     input_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
 
-    from_date_label = Label(input_frame, text="From Date:")
+    from_date_label = CTkLabel(input_frame, text="From Date:")
     from_date_label.pack(side=tk.LEFT, padx=5)
     from_date_input = DateEntry(input_frame, date_pattern='yyyy-mm-dd')
     from_date_input.pack(side=tk.LEFT, padx=5)
 
-    from_time_label = Label(input_frame, text="From Time (HH:MM):")
+    from_time_label = CTkLabel(input_frame, text="From Time (HH:MM):")
     from_time_label.pack(side=tk.LEFT, padx=5)
-    from_time_input = Entry(input_frame)
+    from_time_input = CTkEntry(input_frame)
     from_time_input.pack(side=tk.LEFT, padx=5)
 
-    to_date_label = Label(input_frame, text="To Date:")
+    to_date_label = CTkLabel(input_frame, text="To Date:")
     to_date_label.pack(side=tk.LEFT, padx=5)
     to_date_input = DateEntry(input_frame, date_pattern='yyyy-mm-dd')
     to_date_input.pack(side=tk.LEFT, padx=5)
 
-    to_time_label = Label(input_frame, text="To Time (HH:MM):")
+    to_time_label = CTkLabel(input_frame, text="To Time (HH:MM):")
     to_time_label.pack(side=tk.LEFT, padx=5)
-    to_time_input = Entry(input_frame)
+    to_time_input = CTkEntry(input_frame)
     to_time_input.pack(side=tk.LEFT, padx=5)
 
     figure = plt.Figure()
@@ -132,10 +131,10 @@ def open_timeseries_window(param):
 
         fetch_and_display_timeseries(param, from_datetime, to_datetime, canvas, figure)
 
-    fetch_button = Button(input_frame, text="Show Graph", command=fetch_and_display)
+    fetch_button = CTkButton(input_frame, text="Show Graph", command=fetch_and_display)
     fetch_button.pack(side=tk.LEFT, padx=5)
 
-    save_button = Button(input_frame, text="Save Image", command=lambda: save_graph_as_image(figure))
+    save_button = CTkButton(input_frame, text="Save Image", command=lambda: save_graph_as_image(figure))
     save_button.pack(side=tk.LEFT, padx=5)
 
     # Default time range: past hour to now
@@ -157,10 +156,9 @@ def save_settings(set_temp_input, over_duration_input, temp_change_input):
         conn = psycopg2.connect(
             dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT
         )
-        now = datetime.now()
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO temp_setting (timestamp, set_temp, over_duration, temp_change) VALUES (%s, %s, %s, %s)",
-                       (now, set_temp, over_duration, temp_change))
+        cursor.execute("INSERT INTO temp_setting (set_temp, over_duration, temp_change) VALUES (%s, %s, %s)",
+                       (set_temp, over_duration, temp_change))
         conn.commit()
         cursor.close()
         conn.close()
@@ -170,23 +168,20 @@ def save_settings(set_temp_input, over_duration_input, temp_change_input):
 
 # Function to open the settings window
 def open_settings():
-    settings_window = tk.Toplevel()
+    settings_window = CTkToplevel()
     settings_window.title("Settings")
     settings_window.geometry("300x200")
     settings_window.grab_set()  # Ensure the settings window is modal
     
-    set_temp_input = Entry(settings_window)
-    set_temp_input.insert(0, 'Set Temp')
-    over_duration_input = Entry(settings_window)
-    over_duration_input.insert(0, 'Over Duration')
-    temp_change_input = Entry(settings_window)
-    temp_change_input.insert(0, 'Temp Change')
+    set_temp_input = CTkEntry(settings_window, placeholder_text='Set Temp')
+    over_duration_input = CTkEntry(settings_window, placeholder_text='Over Duration')
+    temp_change_input = CTkEntry(settings_window, placeholder_text='Temp Change')
     
     set_temp_input.pack(pady=5)
     over_duration_input.pack(pady=5)
     temp_change_input.pack(pady=5)
     
-    save_button = Button(settings_window, text="Save Settings", command=lambda: save_settings(set_temp_input, over_duration_input, temp_change_input))
+    save_button = CTkButton(settings_window, text="Save Settings", command=lambda: save_settings(set_temp_input, over_duration_input, temp_change_input))
     save_button.pack(pady=10)
 
 # Function to download data as CSV
@@ -210,25 +205,25 @@ def download_data(from_date_input, to_date_input):
 
 # Function to open the download window
 def open_download():
-    download_window = tk.Toplevel()
+    download_window = CTkToplevel()
     download_window.title("Download Data")
     download_window.geometry("300x200")
     download_window.grab_set()  # Ensure the download window is modal
     
-    from_date_label = Label(download_window, text="From Date:")
+    from_date_label = CTkLabel(download_window, text="From Date:")
     from_date_label.pack(pady=5)
     from_date_input = DateEntry(download_window, date_pattern='yyyy-mm-dd')
     from_date_input.pack(pady=5)
     
-    to_date_label = Label(download_window, text="To Date:")
+    to_date_label = CTkLabel(download_window, text="To Date:")
     to_date_label.pack(pady=5)
     to_date_input = DateEntry(download_window, date_pattern='yyyy-mm-dd')
     to_date_input.pack(pady=5)
     
-    download_button = Button(download_window, text="Download", command=lambda: download_data(from_date_input, to_date_input))
+    download_button = CTkButton(download_window, text="Download", command=lambda: download_data(from_date_input, to_date_input))
     download_button.pack(pady=10)
 
-app = tk.Tk()
+app = CTk()
 app.title("Aquameter Membrane Distillation")
 app.geometry('1024x600')
 
@@ -247,22 +242,22 @@ right_logo_image = Image.open("/home/resurgencemd/pythonscripts/resurgence_logo.
 left_logo_image = left_logo_image.resize((100, 100), Image.LANCZOS)  # Resize image if needed
 right_logo_image = right_logo_image.resize((480, 75), Image.LANCZOS)  # Resize image if needed
 
-left_logo_tk_image = ImageTk.PhotoImage(left_logo_image)
-right_logo_tk_image = ImageTk.PhotoImage(right_logo_image)
+left_logo_ctk_image = CTkImage(light_image=left_logo_image, dark_image=left_logo_image, size=(80, 80))
+right_logo_ctk_image = CTkImage(light_image=right_logo_image, dark_image=right_logo_image, size=(250, 50))
 
 # Create a transparent frame for the top title bar
-title_frame = Frame(master=app)
+title_frame = CTkFrame(master=app, fg_color="transparent")
 title_frame.grid(row=0, column=0, columnspan=3, sticky="n")
 
 # Create and place logo labels within the transparent frame
-left_logo_label = Label(master=title_frame, image=left_logo_tk_image)
+left_logo_label = CTkLabel(master=title_frame, image=left_logo_ctk_image, text="")
 left_logo_label.grid(row=0, column=0, padx=20, sticky="w")
 
-right_logo_label = Label(master=title_frame, image=right_logo_tk_image)
+right_logo_label = CTkLabel(master=title_frame, image=right_logo_ctk_image, text="")
 right_logo_label.grid(row=0, column=2, padx=20, sticky="e")
 
 # Title within the transparent frame
-title_label = Label(master=title_frame, text="Membrane Distillation", font=("Times New Roman", 44, 'bold'))
+title_label = CTkLabel(master=title_frame, text="Membrane Distillation", font=("Times New Roman", 44, 'bold'))
 title_label.grid(row=0, column=1, pady=10)
 
 # Section labels and frames
@@ -294,24 +289,24 @@ parameters = [anaerobic_cstr_params, membrane_tank_params, effluent_params]
 
 # Create frames and labels for each section
 for i, section in enumerate(sections):
-    section_frame = Frame(master=app)
+    section_frame = CTkFrame(master=app, fg_color="transparent")
     section_frame.grid(row=1, column=i, padx=20, pady=20, sticky="nsew")
 
-    section_label = Label(master=section_frame, text=section, font=("Times New Roman", 24, 'bold'))
+    section_label = CTkLabel(master=section_frame, text=section, font=("Times New Roman", 24, 'bold'), fg_color="#ffede0", corner_radius=15)
     section_label.grid(row=0, column=0, columnspan=2, pady=10)
 
     # Create subframes and labels for parameters
     if section == "Anaerobic CSTR":
         for j, (param, topic, col, unit) in enumerate(parameters[i]):
-            value = mqtt_values[col]  # Get value from MQTT
-            param_frame = Frame(master=section_frame, height=100, width=200, relief=tk.RAISED, borderwidth=2)
+            value = mqtt_values[topic]  # Get value from MQTT
+            param_frame = CTkFrame(master=section_frame, height=100, width=200, fg_color="#cfeaf7")
             param_frame.grid(row=(j // 2) + 1, column=j % 2, pady=10, padx=20, sticky="nsew")
 
-            value_label = Label(master=param_frame, text=f"{value}{unit}", font=("Times New Roman", 32, 'bold'))
+            value_label = CTkLabel(master=param_frame, text=f"{value}{unit}", font=("Times New Roman", 32, 'bold'))
             value_label.place(relx=0.5, rely=0.3, anchor="center")
-            border_line = Frame(master=param_frame, height=2, width=200, bg="black")
+            border_line = CTkFrame(master=param_frame, height=2, width=200, fg_color="black")
             border_line.place(relx=0.5, rely=0.6, anchor="center")
-            param_label = Label(master=param_frame, text=f"{param}", font=("Times New Roman", 20, 'bold'))
+            param_label = CTkLabel(master=param_frame, text=f"{param}", font=("Times New Roman", 20, 'bold'))
             param_label.place(relx=0.5, rely=0.65, anchor="n")
             
             # Bind click event
@@ -319,31 +314,31 @@ for i, section in enumerate(sections):
             
     else:
         for j, (param, topic, col, unit) in enumerate(parameters[i]):
-            value = mqtt_values[col]  # Get value from MQTT
-            param_frame = Frame(master=section_frame, height=100, width=200, relief=tk.RAISED, borderwidth=2)
+            value = mqtt_values[topic]  # Get value from MQTT
+            param_frame = CTkFrame(master=section_frame, height=100, width=200, fg_color="#cfeaf7")
             param_frame.grid(row=j + 1, column=0, pady=10, padx=20, sticky="nsew")
             
-            value_label = Label(master=param_frame, text=f"{value}{unit}", font=("Times New Roman", 32, 'bold'))
+            value_label = CTkLabel(master=param_frame, text=f"{value}{unit}", font=("Times New Roman", 32, 'bold'))
             value_label.place(relx=0.5, rely=0.3, anchor="center")
-            border_line = Frame(master=param_frame, height=2, width=200, bg="black")
+            border_line = CTkFrame(master=param_frame, height=2, width=200, fg_color="black")
             border_line.place(relx=0.5, rely=0.6, anchor="center")
-            param_label = Label(master=param_frame, text=f"{param}", font=("Times New Roman", 20, 'bold'))
+            param_label = CTkLabel(master=param_frame, text=f"{param}", font=("Times New Roman", 20, 'bold'))
             param_label.place(relx=0.5, rely=0.65, anchor="n")
             
             # Bind click event
             param_frame.bind("<Button-1>", lambda e, param=col: on_param_frame_click(param))
 
 # Create footer frame
-footer_frame = Frame(master=app)
+footer_frame = CTkFrame(master=app, fg_color="transparent")
 footer_frame.grid(row=2, column=0, columnspan=3, pady=5)
-company_logo_image = Image.open("company-logo.png")  # Replace with the actual path to your company logo
+company_logo_image = Image.open("/home/resurgencemd/pythonscripts/company-logo.png")  # Replace with the actual path to your company logo
 company_logo_image = company_logo_image.resize((100, 50), Image.LANCZOS)  # Resize image if needed
-company_logo_tk_image = ImageTk.PhotoImage(company_logo_image)
+company_logo_ctk_image = CTkImage(light_image=company_logo_image, dark_image=company_logo_image, size=(100, 20))
 # Add company logo and copyright text to footer
-company_logo_label = Label(master=footer_frame, image=company_logo_tk_image)
+company_logo_label = CTkLabel(master=footer_frame, image=company_logo_ctk_image, text="")
 company_logo_label.grid(row=0, column=1, padx=20, sticky="e")
 
-copyright_label = Label(master=footer_frame, text="All rights reserved © 2024 Pentaprism Technologies.", font=("Times New Roman", 12))
+copyright_label = CTkLabel(master=footer_frame, text="All rights reserved © 2024 Pentaprism Technologies.", font=("Times New Roman", 12))
 copyright_label.grid(row=0, column=0, pady=10)
 
 # Configure grid to expand and fill the window
