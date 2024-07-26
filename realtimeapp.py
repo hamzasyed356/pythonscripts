@@ -41,6 +41,8 @@ def on_message(client, userdata, msg):
     topic = msg.topic
     value = msg.payload.decode()
     mqtt_values[topic] = value
+    print(f"Received message: {topic} -> {value}")  # Debugging line
+    update_ui_values()  # Update the UI with new values
 
 # Initialize MQTT client and connect
 mqtt_client = mqtt.Client()
@@ -287,6 +289,9 @@ effluent_params = [
 
 parameters = [anaerobic_cstr_params, membrane_tank_params, effluent_params]
 
+# Store value labels in a dictionary
+value_labels = {}
+
 # Create frames and labels for each section
 for i, section in enumerate(sections):
     section_frame = CTkFrame(master=app, fg_color="transparent")
@@ -304,6 +309,7 @@ for i, section in enumerate(sections):
 
             value_label = CTkLabel(master=param_frame, text=f"{value}{unit}", font=("Times New Roman", 32, 'bold'))
             value_label.place(relx=0.5, rely=0.3, anchor="center")
+            value_labels[topic] = value_label  # Store the label reference
             border_line = CTkFrame(master=param_frame, height=2, width=200, fg_color="black")
             border_line.place(relx=0.5, rely=0.6, anchor="center")
             param_label = CTkLabel(master=param_frame, text=f"{param}", font=("Times New Roman", 20, 'bold'))
@@ -320,6 +326,7 @@ for i, section in enumerate(sections):
             
             value_label = CTkLabel(master=param_frame, text=f"{value}{unit}", font=("Times New Roman", 32, 'bold'))
             value_label.place(relx=0.5, rely=0.3, anchor="center")
+            value_labels[topic] = value_label  # Store the label reference
             border_line = CTkFrame(master=param_frame, height=2, width=200, fg_color="black")
             border_line.place(relx=0.5, rely=0.6, anchor="center")
             param_label = CTkLabel(master=param_frame, text=f"{param}", font=("Times New Roman", 20, 'bold'))
@@ -345,5 +352,27 @@ copyright_label.grid(row=0, column=0, pady=10)
 for i in range(3):
     app.grid_columnconfigure(i, weight=1)
 app.grid_rowconfigure(1, weight=1)
+
+# Function to update UI values
+def update_ui_values():
+    for i, section in enumerate(sections):
+        if section == "Anaerobic CSTR":
+            for j, (param, topic, col, unit) in enumerate(parameters[i]):
+                value = mqtt_values[topic]  # Get value from MQTT
+                value_label = value_labels[topic]  # Get the corresponding label
+                value_label.configure(text=f"{value}{unit}")
+        else:
+            for j, (param, topic, col, unit) in enumerate(parameters[i]):
+                value = mqtt_values[topic]  # Get value from MQTT
+                value_label = value_labels[topic]  # Get the corresponding label
+                value_label.configure(text=f"{value}{unit}")
+
+# Periodically update the UI
+def periodically_update_ui():
+    update_ui_values()
+    app.after(1000, periodically_update_ui)  # Update every second
+
+# Start the periodic update
+app.after(1000, periodically_update_ui)
 
 app.mainloop()
