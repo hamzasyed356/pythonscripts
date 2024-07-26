@@ -41,7 +41,7 @@ def on_message(client, userdata, msg):
     topic = msg.topic
     value = msg.payload.decode()
     mqtt_values[topic] = value
-    print(f"Received message: {topic} -> {value}")  # Debugging line
+    # print(f"Received message: {topic} -> {value}")  # Debugging line
     update_ui_values()  # Update the UI with new values
 
 # Initialize MQTT client and connect
