@@ -303,7 +303,7 @@ for i, section in enumerate(sections):
     # Create subframes and labels for parameters
     if section == "Anaerobic CSTR":
         for j, (param, topic, col, unit) in enumerate(parameters[i]):
-            value = mqtt_values[topic]  # Get value from MQTT
+            value = mqtt_values[col]  # Get value from MQTT
             param_frame = Frame(master=section_frame, height=100, width=200, relief=tk.RAISED, borderwidth=2)
             param_frame.grid(row=(j // 2) + 1, column=j % 2, pady=10, padx=20, sticky="nsew")
 
@@ -319,7 +319,7 @@ for i, section in enumerate(sections):
             
     else:
         for j, (param, topic, col, unit) in enumerate(parameters[i]):
-            value = mqtt_values[topic]  # Get value from MQTT
+            value = mqtt_values[col]  # Get value from MQTT
             param_frame = Frame(master=section_frame, height=100, width=200, relief=tk.RAISED, borderwidth=2)
             param_frame.grid(row=j + 1, column=0, pady=10, padx=20, sticky="nsew")
             
