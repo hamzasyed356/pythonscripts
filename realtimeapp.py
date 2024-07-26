@@ -160,8 +160,8 @@ def save_settings(set_temp_input, over_duration_input, temp_change_input):
         )
         now = datetime.now
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO temp_setting (timestamp, set_temp, over_duration, temp_change) VALUES (%s, %s, %s, %s)",
-                       (now, set_temp, over_duration, temp_change))
+        cursor.execute("INSERT INTO temp_setting (timestamp, set_temp, over_duration, temp_change, published) VALUES (%s, %s, %s, %s, %s)",
+                       (now, set_temp, over_duration, temp_change, FALSE))
         conn.commit()
         cursor.close()
         conn.close()
