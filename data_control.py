@@ -30,7 +30,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # MQTT configuration
 MQTT_BROKER = '192.168.18.19'
 MQTT_PORT = 1883
-MQTT_TOPICS = ['cstr-level', 'cstr-temp', 'cstr-ph', 'cstr-orp', 'cstr-ec', 'cstr-tds', 'mtank-level', 'mtank-temp', 'effluent-level', 'set-temp', 'over-duration', 'temp-change']
+MQTT_TOPICS = ['cstr-level', 'cstr-temp', 'cstr-ph', 'cstr-orp', 'cstr-ec', 'cstr-tds', 'mtank-level', 'mtank-temp', 'effluent-level']
 FLUX_TOPIC = 'flux'
 
 # Global variables to store sensor data
@@ -81,11 +81,9 @@ def on_connect(client, userdata, flags, rc):
 
 def on_message(client, userdata, msg):
     global sensor_data
-    global temp_setting
     topic = msg.topic
     payload = json.loads(msg.payload.decode())
     sensor_data['timestamp'] = datetime.now()
-    temp_setting['timestamp'] = datetime.now()
 
     if topic == 'cstr-temp':
         sensor_data['cstr_temp'] = float(payload)
@@ -105,15 +103,9 @@ def on_message(client, userdata, msg):
         sensor_data['mtank_level'] = float(payload)
     elif topic == 'effluent-level':
         sensor_data['effluent_level'] = float(payload)
-    elif topic == 'set-temp':
-        temp_setting['set_temp'] = float(payload)
-    elif topic == 'over-duration':
-        temp_setting['over_duration'] = float(payload)
-    elif topic == 'temp-change':
-        temp_setting['temp_change'] = float(payload)
 
 # Function to calculate flux
-def calculate_flux(current_level, conn):
+def calculate_flux(current_level, conn, mqtt_client):
     try:
         cursor = conn.cursor()
         one_minute_ago = datetime.now() - timedelta(minutes=1)
@@ -129,18 +121,21 @@ def calculate_flux(current_level, conn):
         cursor.close()
         if result:
             previous_level = result[0]
-            return current_level - previous_level
+            flux = current_level - previous_level
         else:
-            return 0  # If no previous data is found, assume no change
+            flux = 0  # If no previous data is found, assume no change
+
+        mqtt_client.publish(FLUX_TOPIC, json.dumps({'flux': flux}))
+        return flux
     except Exception as e:
         print(f"Error calculating flux: {e}")
         return 0
 
 # Function to save data to the PostgreSQL database
-def save_to_database(data, temp_data):
+def save_to_database(data, temp_data, mqtt_client):
     try:
         conn = psycopg2.connect(**DATABASE_CONFIG)
-        flux = calculate_flux(data['effluent_level'], conn)
+        flux = calculate_flux(data['effluent_level'], conn, mqtt_client)
         cursor = conn.cursor()
         insert_query = '''
         INSERT INTO sensor_data (timestamp, cstr_temp, cstr_level, cstr_ph, cstr_orp, cstr_ec, cstr_tds, mtank_temp, mtank_level, effluent_level, flux, published)
@@ -292,7 +287,7 @@ def main_loop():
         time.sleep(30)  # Check every minute
 
         # Save data to local database
-        success, flux = save_to_database(sensor_data, temp_setting)
+        success, flux = save_to_database(sensor_data, temp_setting, client)
         if success:
             sensor_data['published'] = False
             temp_setting['published'] = False
