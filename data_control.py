@@ -125,7 +125,7 @@ def calculate_flux(current_level, conn, mqtt_client):
         else:
             flux = 0  # If no previous data is found, assume no change
 
-        mqtt_client.publish(FLUX_TOPIC, json.dumps({'flux': flux}))
+        mqtt_client.publish(FLUX_TOPIC, flux)
         return flux
     except Exception as e:
         print(f"Error calculating flux: {e}")
