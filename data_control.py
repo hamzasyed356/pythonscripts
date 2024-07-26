@@ -84,8 +84,8 @@ def on_message(client, userdata, msg):
     global temp_setting
     topic = msg.topic
     payload = json.loads(msg.payload.decode())
-    sensor_data['timestamp'] = datetime.utcnow()
-    temp_setting['timestamp'] = datetime.utcnow()
+    sensor_data['timestamp'] = datetime.now()
+    temp_setting['timestamp'] = datetime.now()
 
     if topic == 'cstr-temp':
         sensor_data['cstr_temp'] = float(payload)
