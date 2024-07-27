@@ -9,7 +9,6 @@ from tkcalendar import DateEntry
 from datetime import datetime, timedelta
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import paho.mqtt.client as mqtt
-import time
 
 # MQTT Configuration
 MQTT_BROKER = "192.168.18.19"
@@ -177,7 +176,7 @@ def save_settings(set_temp_input, over_duration_input, temp_change_input):
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {e}")
 
-# Function to open the settings window
+# Function to open the settings window and fetch the latest settings
 def open_settings():
     settings_window = CTkToplevel()
     settings_window.title("Settings")
@@ -197,6 +196,24 @@ def open_settings():
 
     save_button = CTkButton(settings_window, text="Save Settings", command=lambda: save_settings(set_temp_input, over_duration_input, temp_change_input))
     save_button.pack(pady=10)
+
+    # Fetch the latest settings from the database
+    try:
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT set_temp, over_duration, temp_change FROM temp_setting ORDER BY timestamp DESC LIMIT 1")
+        latest_settings = cursor.fetchone()
+        conn.close()
+
+        if latest_settings:
+            set_temp_input.insert(0, latest_settings[0])
+            over_duration_input.insert(0, latest_settings[1])
+            temp_change_input.insert(0, latest_settings[2])
+
+    except Exception as e:
+        messagebox.showerror("Error", f"An error occurred while fetching settings: {e}")
 
 # Function to download data as CSV
 def download_data(from_date_input, to_date_input):
@@ -278,11 +295,11 @@ sections = ["Anaerobic CSTR", "Membrane Tank", "Effluent"]
 
 anaerobic_cstr_params = [
     ("PH", "cstr-ph", "cstr_ph", " /14"),
-    ("EC", "cstr-ec", "cstr_ec", " mS/cm"),
     ("TDS", "cstr-tds", "cstr_tds", " PPM"),
     ("ORP", "cstr-orp", "cstr_orp", " mV"),
     ("Temp", "cstr-temp", "cstr_temp", " °C"),
-    ("Level", "cstr-level", "cstr_level", " mL"),
+    ("EC", "cstr-ec", "cstr_ec", " mS/cm"),
+    ("Level", "cstr-level", "cstr_level", " Liters"),
 ]
 
 membrane_tank_params = [
@@ -292,8 +309,8 @@ membrane_tank_params = [
 ]
 
 effluent_params = [
-    ("Weight", "effluent-weight", "effluent_weight", " g"),
     ("Level", "effluent-level", "effluent_level", " mL"),
+    ("Weight", "effluent-weight", "effluent_weight", " g"),
     ("Flux", "flux", "flux", " mL/min")
 ]
 
