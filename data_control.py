@@ -48,27 +48,6 @@ sensor_data = {
     'published': False
 }
 
-temp_setting = {
-    'set_temp': None,
-    'over_duration': None,
-    'temp_change': None,
-    'timestamp': None,
-    'published': False
-}
-
-def fetch_temp_setting():
-    try:
-        conn = psycopg2.connect(**DATABASE_CONFIG)
-        cursor = conn.cursor()
-        cursor.execute("SELECT set_temp, over_duration, temp_change FROM temp_setting ORDER BY timestamp DESC LIMIT 1")
-        result = cursor.fetchone()
-        conn.close()
-        if result:
-            temp_setting['set_temp'], temp_setting['over_duration'], temp_setting['temp_change'] = result
-        print("Fetched initial temp settings:", temp_setting)
-    except Exception as e:
-        print(f"Error fetching temp settings: {e}")
-
 # Utility function to convert datetime to string
 def datetime_to_str(dt):
     return dt.strftime('%Y-%m-%d %H:%M:%S')
@@ -132,7 +111,7 @@ def calculate_flux(current_level, conn, mqtt_client):
         return 0
 
 # Function to save data to the PostgreSQL database
-def save_to_database(data, temp_data, mqtt_client):
+def save_to_database(data, mqtt_client):
     try:
         conn = psycopg2.connect(**DATABASE_CONFIG)
         flux = calculate_flux(data['effluent_level'], conn, mqtt_client)
@@ -143,12 +122,6 @@ def save_to_database(data, temp_data, mqtt_client):
         '''
         cursor.execute(insert_query, (data['timestamp'], data['cstr_temp'], data['cstr_level'], data['cstr_ph'], data['cstr_orp'], data['cstr_ec'], data['cstr_tds'], data['mtank_temp'], data['mtank_level'], data['effluent_level'], flux, data['published']))
         
-        insert_query2 = '''
-        INSERT INTO temp_setting (timestamp, set_temp, over_duration, temp_change, published)
-        VALUES (%s, %s, %s, %s, %s)
-        '''
-        cursor.execute(insert_query2, (temp_data['timestamp'], temp_data['set_temp'], temp_data['over_duration'], temp_data['temp_change'], temp_data['published']))
-                
         conn.commit()
         cursor.close()
         conn.close()
@@ -196,9 +169,9 @@ def upload_unpublished_data():
             response = upload_data_to_supabase(formatted_data)
             if response and response.data:
                 update_published_status(ids)
-                print("Data uploaded and marked as published successfully.")
+                print("Sensor data uploaded and marked as published successfully.")
             else:
-                print("Error uploading data to Supabase")
+                print("Error uploading sensor data to Supabase")
 
         # Fetch and upload unpublished temp settings
         cursor.execute("SELECT * FROM temp_setting WHERE published = FALSE")
@@ -241,7 +214,7 @@ def upload_data_to_supabase_temp(data):
         response = supabase.table('temp_setting').insert(data).execute()
         return response
     except Exception as e:
-        print(f"Error uploading data to Supabase: {e}")
+        print(f"Error uploading temp setting data to Supabase: {e}")
         return None
 
 # Function to update published status in the PostgreSQL database
@@ -281,16 +254,13 @@ def main_loop():
     client.connect(MQTT_BROKER, MQTT_PORT, 60)
     client.loop_start()
 
-    fetch_temp_setting()
-
     while True:
         time.sleep(30)  # Check every minute
 
         # Save data to local database
-        success, flux = save_to_database(sensor_data, temp_setting, client)
+        success, flux = save_to_database(sensor_data, client)
         if success:
             sensor_data['published'] = False
-            temp_setting['published'] = False
 
         # Check for internet connection and upload unpublished data
         if is_connected():
