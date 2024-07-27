@@ -95,7 +95,7 @@ def save_graph_as_image(figure):
 def open_timeseries_window(param):
     timeseries_window = CTkToplevel()
     timeseries_window.title(f"Time Series Graph for {param}")
-    timeseries_window.geometry("800x600")
+    timeseries_window.geometry("600x550")
 
     # Ensure the window is visible before grabbing
     timeseries_window.update_idletasks()
