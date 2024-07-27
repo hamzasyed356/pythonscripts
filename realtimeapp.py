@@ -58,7 +58,7 @@ DB_HOST = "localhost"
 DB_PORT = "5432"
 
 # Function to fetch data and display time series graph
-def fetch_and_display_timeseries(param, from_date, to_date, canvas, figure):
+def fetch_and_display_timeseries(param, from_date, to_date, canvas, figure, parent_window):
     try:
         conn = psycopg2.connect(
             dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT
@@ -83,6 +83,7 @@ def fetch_and_display_timeseries(param, from_date, to_date, canvas, figure):
 
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {e}")
+        parent_window.destroy()
 
 # Function to save the graph as an image
 def save_graph_as_image(figure):
@@ -117,20 +118,20 @@ def open_timeseries_window(param):
     from_time_input = CTkEntry(row1_frame)
     from_time_input.pack(side=tk.LEFT, padx=5)
 
-    to_date_label = CTkLabel(row1_frame, text="To Date:")
-    to_date_label.pack(side=tk.LEFT, padx=5)
-    to_date_input = DateEntry(row1_frame, date_pattern='yyyy-mm-dd')
-    to_date_input.pack(side=tk.LEFT, padx=5)
-
     row2_frame = CTkFrame(input_frame)
     row2_frame.pack(side=tk.TOP, fill=tk.X, pady=(10, 0))
+
+    to_date_label = CTkLabel(row2_frame, text="To Date:")
+    to_date_label.pack(side=tk.LEFT, padx=5)
+    to_date_input = DateEntry(row2_frame, date_pattern='yyyy-mm-dd')
+    to_date_input.pack(side=tk.LEFT, padx=5)
 
     to_time_label = CTkLabel(row2_frame, text="To Time (HH:MM):")
     to_time_label.pack(side=tk.LEFT, padx=5)
     to_time_input = CTkEntry(row2_frame)
     to_time_input.pack(side=tk.LEFT, padx=5)
 
-    fetch_button = CTkButton(row2_frame, text="Show Graph", command=fetch_and_display)
+    fetch_button = CTkButton(row2_frame, text="Show Graph", command=lambda: fetch_and_display())
     fetch_button.pack(side=tk.LEFT, padx=5)
 
     save_button = CTkButton(row2_frame, text="Save Image", command=lambda: save_graph_as_image(figure))
@@ -149,18 +150,18 @@ def open_timeseries_window(param):
         from_datetime = f"{from_date_str} {from_time_str}:00"
         to_datetime = f"{to_date_str} {to_time_str}:00"
 
-        fetch_and_display_timeseries(param, from_datetime, to_datetime, canvas, figure)
+        fetch_and_display_timeseries(param, from_datetime, to_datetime, canvas, figure, timeseries_window)
 
     now = datetime.now()
     one_hour_ago = now - timedelta(hours=1)
-    fetch_and_display_timeseries(param, one_hour_ago.strftime('%Y-%m-%d %H:%M:%S'), now.strftime('%Y-%m-%d %H:%M:%S'), canvas, figure)
+    fetch_and_display_timeseries(param, one_hour_ago.strftime('%Y-%m-%d %H:%M:%S'), now.strftime('%Y-%m-%d %H:%M:%S'), canvas, figure, timeseries_window)
 
 # Example function to bind to a parameter frame click event
 def on_param_frame_click(param):
     open_timeseries_window(param)
 
 # Function to save settings to the database
-def save_settings(set_temp_input, over_duration_input, temp_change_input):
+def save_settings(set_temp_input, over_duration_input, temp_change_input, settings_window):
     set_temp = set_temp_input.get()
     over_duration = over_duration_input.get()
     temp_change = temp_change_input.get()
@@ -181,6 +182,7 @@ def save_settings(set_temp_input, over_duration_input, temp_change_input):
         messagebox.showinfo("Success", "Settings have been saved successfully.")
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {e}")
+        settings_window.destroy()
 
 # Function to open the settings window and fetch the latest settings
 def open_settings():
@@ -200,7 +202,7 @@ def open_settings():
     over_duration_input.pack(pady=10)
     temp_change_input.pack(pady=10)
 
-    save_button = CTkButton(settings_window, text="Save Settings", command=lambda: save_settings(set_temp_input, over_duration_input, temp_change_input), font=("Helvetica", 18))
+    save_button = CTkButton(settings_window, text="Save Settings", command=lambda: save_settings(set_temp_input, over_duration_input, temp_change_input, settings_window), font=("Helvetica", 18))
     save_button.pack(pady=20)
 
     # Fetch the latest settings from the database
@@ -220,9 +222,10 @@ def open_settings():
 
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred while fetching settings: {e}")
+        settings_window.destroy()
 
 # Function to download data as CSV
-def download_data(from_date_input, to_date_input):
+def download_data(from_date_input, to_date_input, download_window):
     from_date = from_date_input.get_date().strftime('%Y-%m-%d %H:%M:%S')
     to_date = to_date_input.get_date().strftime('%Y-%m-%d %H:%M:%S')
 
@@ -239,6 +242,7 @@ def download_data(from_date_input, to_date_input):
             messagebox.showinfo("Success", "Data has been downloaded successfully.")
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {e}")
+        download_window.destroy()
 
 # Function to open the download window
 def open_download():
@@ -260,7 +264,7 @@ def open_download():
     to_date_input = DateEntry(download_window, date_pattern='yyyy-mm-dd', font=("Helvetica", 18))
     to_date_input.pack(pady=10)
 
-    download_button = CTkButton(download_window, text="Download", command=lambda: download_data(from_date_input, to_date_input), font=("Helvetica", 18))
+    download_button = CTkButton(download_window, text="Download", command=lambda: download_data(from_date_input, to_date_input, download_window), font=("Helvetica", 18))
     download_button.pack(pady=20)
 
 app = CTk()
