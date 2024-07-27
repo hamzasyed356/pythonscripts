@@ -75,8 +75,8 @@ def calculate_setpoint(start_timestamp, set_temp, initial_temp, over_duration, t
     current_setpoint = initial_temp + max_temp_increase
     return min(current_setpoint, set_temp)
 
-# Function to control relays based on sensor data
-def control_relays(client):
+# Function to control CSTR relays based on sensor data
+def control_cstr_relays(client):
     global set_cstr_temp, over_duration, temp_change, start_timestamp, last_states
 
     if set_cstr_temp is None:
@@ -89,20 +89,33 @@ def control_relays(client):
     initial_temp = 20  # Assume an initial starting temperature; adjust as needed
     current_setpoint = calculate_setpoint(start_timestamp, set_cstr_temp, initial_temp, over_duration, temp_change)
 
-    if cstr_temp is not None and mtank_temp is not None:
+    if cstr_temp is not None:
         # Determine relay states
         heater1_state = 'off'
         heater2_state = 'off'
-        mtank_out_state = 'off'
         cstr_in_state = 'on'
 
-        if cstr_temp <= current_setpoint - 0.02:
+        if cstr_temp <= current_setpoint - 0.2:
             heater1_state = 'on'
         if cstr_temp <= current_setpoint - 1:
             heater2_state = 'on'
         if cstr_temp >= set_cstr_temp:
             heater1_state = 'off'
             heater2_state = 'off'
+
+        # Publish only if state has changed
+        publish_if_changed(client, 'cstr/heater1', heater1_state)
+        publish_if_changed(client, 'cstr/heater2', heater2_state)
+        publish_if_changed(client, 'cstr/in', cstr_in_state)
+
+# Function to control MTANK relays based on sensor data
+def control_mtank_relays(client):
+    global last_states
+
+    if cstr_temp is not None and mtank_temp is not None:
+        # Determine relay states
+        mtank_out_state = 'off'
+        cstr_in_state = 'on'
 
         if abs(mtank_temp - cstr_temp) >= 5:
             mtank_out_state = 'on'
@@ -111,8 +124,6 @@ def control_relays(client):
             cstr_in_state = 'on'
 
         # Publish only if state has changed
-        publish_if_changed(client, 'cstr/heater1', heater1_state)
-        publish_if_changed(client, 'cstr/heater2', heater2_state)
         publish_if_changed(client, 'mtank/out', mtank_out_state)
         publish_if_changed(client, 'cstr/in', cstr_in_state)
 
@@ -133,7 +144,8 @@ def main():
 
     # Keep the program running and control the relays periodically
     while True:
-        control_relays(client)
+        control_cstr_relays(client)
+        control_mtank_relays(client)
         time.sleep(1)
 
 if __name__ == '__main__':
