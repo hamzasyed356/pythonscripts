@@ -90,7 +90,7 @@ def control_relays(client):
             return
         start_timestamp = time.mktime(db_start_time.timetuple())  # Convert timestamp to time in seconds since epoch
     
-    initial_temp = 28  # Assume an initial starting temperature; adjust as needed
+    initial_temp = 20  # Assume an initial starting temperature; adjust as needed
     current_setpoint = calculate_setpoint(start_timestamp, set_cstr_temp, initial_temp, over_duration, temp_change)
 
     if cstr_temp is not None and mtank_temp is not None:
@@ -100,10 +100,13 @@ def control_relays(client):
         mtank_out_state = 'off'
         cstr_in_state = 'on'
 
-        if cstr_temp <= current_setpoint - 0.1:
+        if cstr_temp <= current_setpoint - 0.2:
             heater1_state = 'on'
         if cstr_temp <= current_setpoint - 1:
             heater2_state = 'on'
+        if cstr_temp >= set_cstr_temp:
+            heater1_state = 'off'
+            heater2_state = 'off'
 
         if abs(mtank_temp - cstr_temp) >= 5:
             mtank_out_state = 'on'
@@ -112,18 +115,16 @@ def control_relays(client):
             cstr_in_state = 'on'
 
         # Publish only if state has changed
-        if last_states['cstr/heater1'] != heater1_state:
-            client.publish('cstr/heater1', heater1_state)
-            last_states['cstr/heater1'] = heater1_state
-        if last_states['cstr/heater2'] != heater2_state:
-            client.publish('cstr/heater2', heater2_state)
-            last_states['cstr/heater2'] = heater2_state
-        if last_states['mtank/out'] != mtank_out_state:
-            client.publish('mtank/out', mtank_out_state)
-            last_states['mtank/out'] = mtank_out_state
-        if last_states['cstr/in'] != cstr_in_state:
-            client.publish('cstr/in', cstr_in_state)
-            last_states['cstr/in'] = cstr_in_state
+        publish_if_changed(client, 'cstr/heater1', heater1_state)
+        publish_if_changed(client, 'cstr/heater2', heater2_state)
+        publish_if_changed(client, 'mtank/out', mtank_out_state)
+        publish_if_changed(client, 'cstr/in', cstr_in_state)
+
+# Function to publish to a topic if the state has changed
+def publish_if_changed(client, topic, state):
+    if last_states[topic] != state:
+        client.publish(topic, state)
+        last_states[topic] = state
 
 # Main function to initialize and start the MQTT client
 def main():
