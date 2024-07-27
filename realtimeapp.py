@@ -264,10 +264,8 @@ app.geometry('1024x600')
 # Create a menu
 menu_bar = Menu(app)
 app.config(menu=menu_bar)
-settings_menu = Menu(menu_bar, tearoff=0)
-menu_bar.add_cascade(label="Menu", menu=settings_menu)
-settings_menu.add_command(label="Settings", command=open_settings)
-settings_menu.add_command(label="Download", command=open_download)
+menu_bar.add_command(label="Settings", command=open_settings)
+menu_bar.add_command(label="Download", command=open_download)
 
 # Load logos
 left_logo_image = Image.open("/home/resurgencemd/pythonscripts/nust-logo.png")
