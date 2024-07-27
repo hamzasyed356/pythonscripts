@@ -86,7 +86,7 @@ def fetch_and_display_timeseries(param, from_date, to_date, canvas, figure):
 
 # Function to save the graph as an image
 def save_graph_as_image(figure):
-    file_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png")])
+    file_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png"), ("JPEG files", "*.jpg")])
     if file_path:
         figure.savefig(file_path)
         messagebox.showinfo("Success", "Image has been saved successfully.")
@@ -180,22 +180,22 @@ def save_settings(set_temp_input, over_duration_input, temp_change_input):
 def open_settings():
     settings_window = CTkToplevel()
     settings_window.title("Settings")
-    settings_window.geometry("300x200")
+    settings_window.geometry("600x400")
 
     # Ensure the window is visible before grabbing
     settings_window.update_idletasks()
     settings_window.after(100, lambda: settings_window.grab_set())
 
-    set_temp_input = CTkEntry(settings_window, placeholder_text='Set Temp')
-    over_duration_input = CTkEntry(settings_window, placeholder_text='Over Duration')
-    temp_change_input = CTkEntry(settings_window, placeholder_text='Temp Change')
+    set_temp_input = CTkEntry(settings_window, placeholder_text='Set Temp', font=("Helvetica", 18))
+    over_duration_input = CTkEntry(settings_window, placeholder_text='Over Duration', font=("Helvetica", 18))
+    temp_change_input = CTkEntry(settings_window, placeholder_text='Temp Change', font=("Helvetica", 18))
 
-    set_temp_input.pack(pady=5)
-    over_duration_input.pack(pady=5)
-    temp_change_input.pack(pady=5)
+    set_temp_input.pack(pady=10)
+    over_duration_input.pack(pady=10)
+    temp_change_input.pack(pady=10)
 
-    save_button = CTkButton(settings_window, text="Save Settings", command=lambda: save_settings(set_temp_input, over_duration_input, temp_change_input))
-    save_button.pack(pady=10)
+    save_button = CTkButton(settings_window, text="Save Settings", command=lambda: save_settings(set_temp_input, over_duration_input, temp_change_input), font=("Helvetica", 18))
+    save_button.pack(pady=20)
 
     # Fetch the latest settings from the database
     try:
@@ -238,24 +238,24 @@ def download_data(from_date_input, to_date_input):
 def open_download():
     download_window = CTkToplevel()
     download_window.title("Download Data")
-    download_window.geometry("300x200")
+    download_window.geometry("600x400")
 
     # Ensure the window is visible before grabbing
     download_window.update_idletasks()
     download_window.after(100, lambda: download_window.grab_set())
 
-    from_date_label = CTkLabel(download_window, text="From Date:")
-    from_date_label.pack(pady=5)
-    from_date_input = DateEntry(download_window, date_pattern='yyyy-mm-dd')
-    from_date_input.pack(pady=5)
+    from_date_label = CTkLabel(download_window, text="From Date:", font=("Helvetica", 18))
+    from_date_label.pack(pady=10)
+    from_date_input = DateEntry(download_window, date_pattern='yyyy-mm-dd', font=("Helvetica", 18))
+    from_date_input.pack(pady=10)
 
-    to_date_label = CTkLabel(download_window, text="To Date:")
-    to_date_label.pack(pady=5)
-    to_date_input = DateEntry(download_window, date_pattern='yyyy-mm-dd')
-    to_date_input.pack(pady=5)
+    to_date_label = CTkLabel(download_window, text="To Date:", font=("Helvetica", 18))
+    to_date_label.pack(pady=10)
+    to_date_input = DateEntry(download_window, date_pattern='yyyy-mm-dd', font=("Helvetica", 18))
+    to_date_input.pack(pady=10)
 
-    download_button = CTkButton(download_window, text="Download", command=lambda: download_data(from_date_input, to_date_input))
-    download_button.pack(pady=10)
+    download_button = CTkButton(download_window, text="Download", command=lambda: download_data(from_date_input, to_date_input), font=("Helvetica", 18))
+    download_button.pack(pady=20)
 
 app = CTk()
 app.title("Aquameter Membrane Distillation")
