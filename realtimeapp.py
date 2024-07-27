@@ -95,7 +95,7 @@ def save_graph_as_image(figure):
 def open_timeseries_window(param):
     timeseries_window = CTkToplevel()
     timeseries_window.title(f"Time Series Graph for {param}")
-    timeseries_window.geometry("600x550")
+    timeseries_window.geometry("800x600")
 
     # Ensure the window is visible before grabbing
     timeseries_window.update_idletasks()
@@ -104,25 +104,37 @@ def open_timeseries_window(param):
     input_frame = CTkFrame(timeseries_window)
     input_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
 
-    from_date_label = CTkLabel(input_frame, text="From Date:")
+    row1_frame = CTkFrame(input_frame)
+    row1_frame.pack(side=tk.TOP, fill=tk.X)
+
+    from_date_label = CTkLabel(row1_frame, text="From Date:")
     from_date_label.pack(side=tk.LEFT, padx=5)
-    from_date_input = DateEntry(input_frame, date_pattern='yyyy-mm-dd')
+    from_date_input = DateEntry(row1_frame, date_pattern='yyyy-mm-dd')
     from_date_input.pack(side=tk.LEFT, padx=5)
 
-    from_time_label = CTkLabel(input_frame, text="From Time (HH:MM):")
+    from_time_label = CTkLabel(row1_frame, text="From Time (HH:MM):")
     from_time_label.pack(side=tk.LEFT, padx=5)
-    from_time_input = CTkEntry(input_frame)
+    from_time_input = CTkEntry(row1_frame)
     from_time_input.pack(side=tk.LEFT, padx=5)
 
-    to_date_label = CTkLabel(input_frame, text="To Date:")
+    to_date_label = CTkLabel(row1_frame, text="To Date:")
     to_date_label.pack(side=tk.LEFT, padx=5)
-    to_date_input = DateEntry(input_frame, date_pattern='yyyy-mm-dd')
+    to_date_input = DateEntry(row1_frame, date_pattern='yyyy-mm-dd')
     to_date_input.pack(side=tk.LEFT, padx=5)
 
-    to_time_label = CTkLabel(input_frame, text="To Time (HH:MM):")
+    row2_frame = CTkFrame(input_frame)
+    row2_frame.pack(side=tk.TOP, fill=tk.X, pady=(10, 0))
+
+    to_time_label = CTkLabel(row2_frame, text="To Time (HH:MM):")
     to_time_label.pack(side=tk.LEFT, padx=5)
-    to_time_input = CTkEntry(input_frame)
+    to_time_input = CTkEntry(row2_frame)
     to_time_input.pack(side=tk.LEFT, padx=5)
+
+    fetch_button = CTkButton(row2_frame, text="Show Graph", command=fetch_and_display)
+    fetch_button.pack(side=tk.LEFT, padx=5)
+
+    save_button = CTkButton(row2_frame, text="Save Image", command=lambda: save_graph_as_image(figure))
+    save_button.pack(side=tk.LEFT, padx=5)
 
     figure = plt.Figure()
     canvas = FigureCanvasTkAgg(figure, master=timeseries_window)
@@ -138,12 +150,6 @@ def open_timeseries_window(param):
         to_datetime = f"{to_date_str} {to_time_str}:00"
 
         fetch_and_display_timeseries(param, from_datetime, to_datetime, canvas, figure)
-
-    fetch_button = CTkButton(input_frame, text="Show Graph", command=fetch_and_display)
-    fetch_button.pack(side=tk.LEFT, padx=5)
-
-    save_button = CTkButton(input_frame, text="Save Image", command=lambda: save_graph_as_image(figure))
-    save_button.pack(side=tk.LEFT, padx=5)
 
     now = datetime.now()
     one_hour_ago = now - timedelta(hours=1)
