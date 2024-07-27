@@ -75,8 +75,7 @@ def on_message(client, userdata, msg):
 def calculate_setpoint(start_timestamp, set_temp, initial_temp, over_duration, temp_change):
     current_timestamp = time.time()
     elapsed_time = current_timestamp - start_timestamp
-    hours_elapsed = elapsed_time / 3600
-    max_temp_increase = (hours_elapsed / over_duration) * temp_change
+    max_temp_increase = (elapsed_time / (over_duration * 3600)) * temp_change  # Convert over_duration to seconds
     current_setpoint = initial_temp + max_temp_increase
     return min(current_setpoint, set_temp)
 
@@ -101,9 +100,9 @@ def control_relays(client):
         mtank_out_state = 'off'
         cstr_in_state = 'on'
 
-        if cstr_temp <= current_setpoint - 1:
+        if cstr_temp <= current_setpoint - 0.2:
             heater1_state = 'on'
-        if cstr_temp <= current_setpoint - 5:
+        if cstr_temp <= current_setpoint - 1:
             heater2_state = 'on'
 
         if abs(mtank_temp - cstr_temp) >= 5:
