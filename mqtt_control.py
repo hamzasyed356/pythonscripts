@@ -54,7 +54,7 @@ def on_connect(client, userdata, flags, rc):
         client.subscribe(topic)
 
 def on_message(client, userdata, msg):
-    global cstr_temp, mtank_temp, last_states
+    global cstr_temp, mtank_temp
 
     topic = msg.topic
     payload = msg.payload.decode()
@@ -66,10 +66,6 @@ def on_message(client, userdata, msg):
             cstr_temp = float(payload)
         elif topic == 'mtank-temp':
             mtank_temp = float(payload)
-
-        control_relays(client)
-    elif topic in CONTROL_TOPICS:
-        last_states[topic] = payload
 
 # Function to calculate the current setpoint temperature
 def calculate_setpoint(start_timestamp, set_temp, initial_temp, over_duration, temp_change):
@@ -100,7 +96,7 @@ def control_relays(client):
         mtank_out_state = 'off'
         cstr_in_state = 'on'
 
-        if cstr_temp <= current_setpoint - 0.2:
+        if cstr_temp <= current_setpoint - 0.02:
             heater1_state = 'on'
         if cstr_temp <= current_setpoint - 1:
             heater2_state = 'on'
@@ -135,8 +131,9 @@ def main():
     client.connect(MQTT_BROKER, MQTT_PORT, 60)
     client.loop_start()
 
-    # Keep the program running
+    # Keep the program running and control the relays periodically
     while True:
+        control_relays(client)
         time.sleep(1)
 
 if __name__ == '__main__':
