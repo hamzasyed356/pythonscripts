@@ -125,10 +125,18 @@ def control_relays(client):
             client.publish('cstr/in', cstr_in_state)
             last_states['cstr/in'] = cstr_in_state
 
-# Initialize MQTT client
-client = mqtt.Client()
-client.on_connect = on_connect
-client.on_message = on_message
+# Main function to initialize and start the MQTT client
+def main():
+    client = mqtt.Client()
+    client.on_connect = on_connect
+    client.on_message = on_message
 
-client.connect(MQTT_BROKER, MQTT_PORT, 60)
-client.loop_forever()
+    client.connect(MQTT_BROKER, MQTT_PORT, 60)
+    client.loop_start()
+
+    # Keep the program running
+    while True:
+        time.sleep(1)
+
+if __name__ == '__main__':
+    main()
