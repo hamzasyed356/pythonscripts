@@ -24,7 +24,7 @@ mtank_temp = None
 set_cstr_temp = None
 over_duration = None
 temp_change = None
-start_time = time.time()
+start_timestamp = None
 
 # Global variables to store the last states of the relays
 last_states = {
@@ -34,18 +34,18 @@ last_states = {
     'cstr/in': None
 }
 
-# Function to get set temperatures from the database
-def get_set_temperatures():
+# Function to get set temperatures and timestamp from the database
+def get_set_temperatures_and_start_time():
     try:
         conn = psycopg2.connect(**DATABASE_CONFIG)
         cursor = conn.cursor()
-        cursor.execute("SELECT set_temp, over_duration, temp_change FROM temp_setting ORDER BY timestamp DESC LIMIT 1")
+        cursor.execute("SELECT set_temp, over_duration, temp_change, timestamp FROM temp_setting ORDER BY timestamp DESC LIMIT 1")
         result = cursor.fetchone()
         conn.close()
-        return result if result else (None, None, None)
+        return result if result else (None, None, None, None)
     except Exception as e:
-        print(f"Error fetching set temperatures: {e}")
-        return (None, None, None)
+        print(f"Error fetching set temperatures and timestamp: {e}")
+        return (None, None, None, None)
 
 # MQTT callbacks
 def on_connect(client, userdata, flags, rc):
@@ -72,8 +72,9 @@ def on_message(client, userdata, msg):
         last_states[topic] = payload
 
 # Function to calculate the current setpoint temperature
-def calculate_setpoint(start_time, set_temp, initial_temp, over_duration, temp_change):
-    elapsed_time = time.time() - start_time
+def calculate_setpoint(start_timestamp, set_temp, initial_temp, over_duration, temp_change):
+    current_timestamp = time.time()
+    elapsed_time = current_timestamp - start_timestamp
     hours_elapsed = elapsed_time / 3600
     max_temp_increase = (hours_elapsed / over_duration) * temp_change
     current_setpoint = initial_temp + max_temp_increase
@@ -81,17 +82,17 @@ def calculate_setpoint(start_time, set_temp, initial_temp, over_duration, temp_c
 
 # Function to control relays based on sensor data
 def control_relays(client):
-    global set_cstr_temp, over_duration, temp_change, start_time, last_states
+    global set_cstr_temp, over_duration, temp_change, start_timestamp, last_states
 
     if set_cstr_temp is None:
-        set_cstr_temp, over_duration, temp_change = get_set_temperatures()
+        set_cstr_temp, over_duration, temp_change, db_start_time = get_set_temperatures_and_start_time()
         if set_cstr_temp is None:
             print("Set temperatures not available")
             return
-        start_time = time.time()
+        start_timestamp = time.mktime(db_start_time.timetuple())  # Convert timestamp to time in seconds since epoch
     
     initial_temp = 20  # Assume an initial starting temperature; adjust as needed
-    current_setpoint = calculate_setpoint(start_time, set_cstr_temp, initial_temp, over_duration, temp_change)
+    current_setpoint = calculate_setpoint(start_timestamp, set_cstr_temp, initial_temp, over_duration, temp_change)
 
     if cstr_temp is not None and mtank_temp is not None:
         # Determine relay states
@@ -100,11 +101,10 @@ def control_relays(client):
         mtank_out_state = 'off'
         cstr_in_state = 'on'
 
+        if cstr_temp <= current_setpoint - 1:
+            heater1_state = 'on'
         if cstr_temp <= current_setpoint - 5:
-            heater1_state = 'on'
             heater2_state = 'on'
-        elif cstr_temp <= current_setpoint - 1:
-            heater1_state = 'on'
 
         if abs(mtank_temp - cstr_temp) >= 5:
             mtank_out_state = 'on'
