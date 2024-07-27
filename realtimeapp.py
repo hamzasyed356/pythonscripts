@@ -9,6 +9,7 @@ from tkcalendar import DateEntry
 from datetime import datetime, timedelta
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import paho.mqtt.client as mqtt
+import os
 
 # MQTT Configuration
 MQTT_BROKER = "192.168.18.19"
@@ -86,11 +87,12 @@ def fetch_and_display_timeseries(param, from_date, to_date, canvas, figure, pare
         parent_window.destroy()
 
 # Function to save the graph as an image
-def save_graph_as_image(figure):
-    file_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png"), ("JPEG files", "*.jpg")])
+def save_graph_as_image(figure, parent_window):
+    file_path = filedialog.asksaveasfilename(initialdir="/home/resurgencemd/pictures", defaultextension=".png", filetypes=[("PNG files", "*.png"), ("JPEG files", "*.jpg")])
     if file_path:
         figure.savefig(file_path)
         messagebox.showinfo("Success", "Image has been saved successfully.")
+        parent_window.destroy()
 
 # Function to open the time series window
 def open_timeseries_window(param):
@@ -134,7 +136,7 @@ def open_timeseries_window(param):
     fetch_button = CTkButton(row2_frame, text="Show Graph", command=lambda: fetch_and_display())
     fetch_button.pack(side=tk.LEFT, padx=5)
 
-    save_button = CTkButton(row2_frame, text="Save Image", command=lambda: save_graph_as_image(figure))
+    save_button = CTkButton(row2_frame, text="Save Image", command=lambda: save_graph_as_image(figure, timeseries_window))
     save_button.pack(side=tk.LEFT, padx=5)
 
     figure = plt.Figure()
@@ -180,6 +182,7 @@ def save_settings(set_temp_input, over_duration_input, temp_change_input, settin
         cursor.close()
         conn.close()
         messagebox.showinfo("Success", "Settings have been saved successfully.")
+        settings_window.destroy()
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {e}")
         settings_window.destroy()
@@ -235,11 +238,12 @@ def download_data(from_date_input, to_date_input, download_window):
         )
         query = f"SELECT * FROM sensor_data WHERE timestamp BETWEEN '{from_date}' AND '{to_date}'"
         df = pd.read_sql_query(query, conn)
-        file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
+        file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")], initialdir="/home/resurgencemd/pictures")
         if file_path:
             df.to_csv(file_path, index=False)
             conn.close()
             messagebox.showinfo("Success", "Data has been downloaded successfully.")
+            download_window.destroy()
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {e}")
         download_window.destroy()
