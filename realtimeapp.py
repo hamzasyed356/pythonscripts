@@ -239,19 +239,9 @@ menu_bar = Menu(app)
 app.config(menu=menu_bar)
 settings_menu = Menu(menu_bar, tearoff=0)
 menu_bar.add_cascade(label="Menu", menu=settings_menu)
-# Bind both mouse click and touch events
-def open_settings_touch(event):
-    open_settings()
-
-def open_download_touch(event):
-    open_download()
-
 settings_menu.add_command(label="Settings", command=open_settings)
 settings_menu.add_command(label="Download", command=open_download)
 
-# Add touch event bindings
-app.bind("<Button-1>", open_settings_touch)
-app.bind("<Button-1>", open_download_touch)
 # Load logos
 left_logo_image = Image.open("/home/resurgencemd/pythonscripts/nust-logo.png")  # Replace with the actual path to your left logo
 right_logo_image = Image.open("/home/resurgencemd/pythonscripts/resurgence_logo.png")  # Replace with the actual path to your right logo
