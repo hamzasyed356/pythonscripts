@@ -27,8 +27,8 @@ title_label = ctk.CTkLabel(master=title_frame, text="Membrane Distillation", fon
 title_label.grid(row=0, column=1, pady=5)
 
 # Load logos for the title bar
-left_logo_image = Image.open("nust-logo.png")
-right_logo_image = Image.open("resurgence_logo.png")
+left_logo_image = Image.open("/home/resurgencemd/pythonscripts/nust-logo.png")
+right_logo_image = Image.open("/home/resurgencemd/pythonscripts/resurgence_logo.png")
 
 left_logo_image = left_logo_image.resize((100, 100), Image.LANCZOS)
 right_logo_image = right_logo_image.resize((480, 75), Image.LANCZOS)
@@ -46,7 +46,7 @@ right_logo_label.grid(row=0, column=2, padx=20, sticky="e")
 footer_frame = ctk.CTkFrame(master=app, fg_color="transparent")
 footer_frame.grid(row=2, column=0, columnspan=4, pady=5)
 
-company_logo_image = Image.open("company-logo.png")  # Replace with the actual path to your company logo
+company_logo_image = Image.open("/home/resurgencemd/pythonscripts/company-logo.png")  # Replace with the actual path to your company logo
 company_logo_image = company_logo_image.resize((100, 50), Image.LANCZOS)  # Resize image if needed
 company_logo_ctk_image = ctk.CTkImage(light_image=company_logo_image, dark_image=company_logo_image, size=(100, 20))
 
