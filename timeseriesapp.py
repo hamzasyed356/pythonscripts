@@ -8,6 +8,50 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
 import psycopg2
 from datetime import datetime, timedelta
+from matplotlib.animation import FuncAnimation
+
+# Function to fetch multiple parameters data from the database
+def fetch_multiple_data(params, from_datetime, to_datetime):
+    param_query = ", ".join(params)
+    query = f"SELECT timestamp, {param_query} FROM sensor_data WHERE timestamp BETWEEN '{from_datetime}' AND '{to_datetime}' ORDER BY timestamp ASC"
+    cur.execute(query)
+    data = cur.fetchall()
+    if data:
+        columns = ['timestamp'] + params
+        df = pd.DataFrame(data, columns=columns)
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        return df
+    else:
+        return pd.DataFrame(columns=['timestamp'] + params)
+
+# Function to update multi-data graphs
+def animate_multi_graph(params, ax):
+    def update(frame):
+        now = datetime.now()
+        one_day_ago = now - timedelta(days=1)
+        from_datetime = one_day_ago.strftime('%Y-%m-%d %H:%M:%S')
+        to_datetime = now.strftime('%Y-%m-%d %H:%M:%S')
+        new_data = fetch_multiple_data(params, from_datetime, to_datetime)
+        
+        x = new_data['timestamp']
+        y1 = new_data[params[0]]
+        y2 = new_data[params[1]]
+        ax.clear()
+        ax.plot(x, y1, marker='o', linestyle='-', label=params[0])
+        ax.plot(x, y2, marker='o', linestyle='-', label=params[1])
+        ax.set_title(f'Time Series Data for {params[0]} and {params[1]}')
+        ax.set_xlabel('Timestamp')
+        ax.set_ylabel('Values')
+        ax.legend()
+        ax.grid(True)
+    return update
+
+# Multi-data graphs
+multi_graphs = [
+    ('cstr-orp', 'cstr-ec'),
+    ('cstr-orp', 'cstr-ph'),
+    ('cstr-ph', 'cstr-ec')
+]
 
 # Initialize the main application
 app = ctk.CTk()
@@ -23,7 +67,7 @@ title_frame = ctk.CTkFrame(master=app, fg_color="transparent")
 title_frame.grid(row=0, column=0, columnspan=4, sticky="n")
 
 # Title within the transparent frame
-title_label = ctk.CTkLabel(master=title_frame, text="Membrane Distillation", font=("Times New Roman", 44, 'bold'))
+title_label = ctk.CTkLabel(master=title_frame, text="Membrane Distillation", font=("Helvetica", 44, 'bold'))
 title_label.grid(row=0, column=1, pady=5)
 
 # Load logos for the title bar
@@ -54,7 +98,7 @@ company_logo_ctk_image = ctk.CTkImage(light_image=company_logo_image, dark_image
 company_logo_label = ctk.CTkLabel(master=footer_frame, image=company_logo_ctk_image, text="")
 company_logo_label.grid(row=0, column=1, padx=20, sticky="e")
 
-copyright_label = ctk.CTkLabel(master=footer_frame, text="All rights reserved © 2024 Pentaprism Technologies.", font=("Times New Roman", 12))
+copyright_label = ctk.CTkLabel(master=footer_frame, text="All rights reserved © 2024 Pentaprism Technologies.", font=("Helvetica", 12))
 copyright_label.grid(row=0, column=0, pady=10)
 
 # Create a scrollable frame for the graphs
@@ -225,6 +269,29 @@ for param1, param2 in combined_parameters:
     menu_bar.add_command(label=f"{param1.replace('_', ' ').title()} & {param2.replace('_', ' ').title()}",
                          command=lambda p1=param1, p2=param2: display_combined_graph(p1, p2))
 
+# Multi-data graphs
+multi_graphs = [
+    ('cstr-orp', 'cstr-ec'),
+    ('cstr-orp', 'cstr-ph'),
+    ('cstr-ph', 'cstr-ec')
+]
+
+# Create a dictionary of multi-data parameter frames
+multi_param_frames = {f"{params[0]} vs {params[1]}": ctk.CTkFrame(scrollable_frame, width=600, height=400) for params in multi_graphs}
+
+# Arrange frames in a grid
+for i, (params, frame) in enumerate(multi_param_frames.items()):
+    frame.grid(row=(len(param_frames) // 3) + (i // 3), column=i % 3, padx=10, pady=10)
+    param_label = ctk.CTkLabel(frame, text=params, font=("Helvetica", 20, 'bold'))
+    param_label.pack(pady=10)
+    multi_frame_plot = plt.Figure(figsize=(6, 4))
+    ax = multi_frame_plot.add_subplot(111)
+    canvas = FigureCanvasTkAgg(multi_frame_plot, master=frame)
+    canvas.get_tk_widget().pack(fill=tk.BOTH, expand=1)
+    param_list = params.split(' vs ')
+    anim = FuncAnimation(multi_frame_plot, animate_multi_graph(param_list, ax), interval=5000, save_count=100, cache_frame_data=False)
+    graph_widgets[params] = canvas
+
 # Function to fetch data from the database
 def fetch_data(param, from_datetime, to_datetime):
     query = f"SELECT timestamp, {param} FROM sensor_data WHERE timestamp BETWEEN '{from_datetime}' AND '{to_datetime}' ORDER BY timestamp ASC"
@@ -236,20 +303,6 @@ def fetch_data(param, from_datetime, to_datetime):
         return df
     else:
         return pd.DataFrame(columns=['timestamp', param])
-
-# Function to fetch multiple parameters data from the database
-def fetch_multiple_data(params, from_datetime, to_datetime):
-    param_query = ", ".join(params)
-    query = f"SELECT timestamp, {param_query} FROM sensor_data WHERE timestamp BETWEEN '{from_datetime}' AND '{to_datetime}' ORDER BY timestamp ASC"
-    cur.execute(query)
-    data = cur.fetchall()
-    if data:
-        columns = ['timestamp'] + params
-        df = pd.DataFrame(data, columns=columns)
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
-        return df
-    else:
-        return pd.DataFrame(columns=['timestamp'] + params)
 
 # Function to update the graphs with data from the database
 def update_graphs():
@@ -269,11 +322,31 @@ def update_graphs():
             ax = graph_widgets[param][1]
             ax.clear()
             ax.plot(data['timestamp'], data[param], marker='o', linestyle='-', label=param)
-            ax.set_title(param.replace("_", " ").title(), fontsize=16, fontname='Times New Roman', fontweight='bold')
+            ax.set_title(param.replace("_", " ").title(), fontsize=16, fontname='Helvetica', fontweight='bold')
             ax.set_xlabel('Time')
             ax.set_ylabel(param)
             ax.legend()
             graph_widgets[param][2].draw()
+
+    for params in multi_graphs:
+        data = fetch_multiple_data(params, from_datetime, to_datetime)
+        if not data.empty:
+            frame_key = f"{params[0]} vs {params[1]}"
+            if frame_key not in graph_widgets:
+                fig, ax = plt.subplots(figsize=(6, 4))
+                graph_widgets[frame_key] = (fig, ax, FigureCanvasTkAgg(fig, master=multi_param_frames[frame_key]))
+                graph_widgets[frame_key][2].get_tk_widget().pack(fill=tk.BOTH, expand=1)
+
+            ax = graph_widgets[frame_key][1]
+            ax.clear()
+            ax.plot(data['timestamp'], data[params[0]], marker='o', linestyle='-', label=params[0])
+            ax.plot(data['timestamp'], data[params[1]], marker='o', linestyle='-', label=params[1])
+            ax.set_title(f'Time Series Data for {params[0]} and {params[1]}', fontsize=16, fontname='Helvetica', fontweight='bold')
+            ax.set_xlabel('Time')
+            ax.set_ylabel('Values')
+            ax.legend()
+            ax.grid(True)
+            graph_widgets[frame_key][2].draw()
 
     scrollable_frame.update_idletasks()
 
@@ -296,7 +369,7 @@ def fetch_and_display_timeseries(param, from_datetime, to_datetime, canvas, figu
         ax = figure.add_subplot(111)
         ax.clear()
         ax.plot(data['timestamp'], data[param], marker='o', linestyle='-', label=param)
-        ax.set_title(param.replace("_", " ").title(), fontsize=16, fontname='Times New Roman', fontweight='bold')
+        ax.set_title(param.replace("_", " ").title(), fontsize=16, fontname='Helvetica', fontweight='bold')
         ax.set_xlabel('Time')
         ax.set_ylabel(param)
         ax.legend()
@@ -310,7 +383,7 @@ def fetch_and_display_combined_timeseries(params, from_datetime, to_datetime, ca
         ax.clear()
         for param in params:
             ax.plot(data['timestamp'], data[param], marker='o', linestyle='-', label=param)
-        ax.set_title(" & ".join([param.replace("_", " ").title() for param in params]), fontsize=16, fontname='Times New Roman', fontweight='bold')
+        ax.set_title(" & ".join([param.replace("_", " ").title() for param in params]), fontsize=16, fontname='Helvetica', fontweight='bold')
         ax.set_xlabel('Time')
         ax.set_ylabel(", ".join(params))
         ax.legend()
