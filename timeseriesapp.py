@@ -150,11 +150,11 @@ view_all_menu = tk.Menu(menu_bar, tearoff=0)
 menu_bar.add_command(label="View All", command=display_all_graphs)
 
 # Parameters
-parameters = ['cstr-ph', 'cstr-temp', 'cstr-level', 'cstr-orp', 'cstr-ec', 'cstr-tds', 'mtank-temp', 'mtank-level', 'mtank-weight', 'effluent-level', 'effluent-weight', 'flux']
+parameters = ['cstr_ph', 'cstr_temp', 'cstr_level', 'cstr_orp', 'cstr_ec', 'cstr_tds', 'mtank_temp', 'mtank_level', 'mtank_weight', 'effluent_level', 'effluent_weight', 'flux']
 
 # Add individual graph buttons
 for param in parameters:
-    menu_bar.add_command(label=param.replace('-', ' ').title(), command=lambda p=param: display_graph(p))
+    menu_bar.add_command(label=param.replace('_', ' ').title(), command=lambda p=param: display_graph(p))
 
 # Function to fetch data from the database
 def fetch_data(param, from_datetime, to_datetime):
@@ -185,8 +185,8 @@ def update_graphs():
 
             ax = graph_widgets[param][1]
             ax.clear()
-            ax.plot(data['timestamp'], data[param], marker='o', linestyle='-', label=param)
-            ax.set_title(param.replace("-", " ").title(), fontsize=16, fontname='Times New Roman', fontweight='bold')
+            ax.plot(data['timestamp'], data[param], marker='o', linestyle='_', label=param)
+            ax.set_title(param.replace("_", " ").title(), fontsize=16, fontname='Times New Roman', fontweight='bold')
             ax.set_xlabel('Time')
             ax.set_ylabel(param)
             ax.legend()
@@ -212,8 +212,8 @@ def fetch_and_display_timeseries(param, from_datetime, to_datetime, canvas, figu
     if not data.empty:
         ax = figure.add_subplot(111)
         ax.clear()
-        ax.plot(data['timestamp'], data[param], marker='o', linestyle='-', label=param)
-        ax.set_title(param.replace("-", " ").title(), fontsize=16, fontname='Times New Roman', fontweight='bold')
+        ax.plot(data['timestamp'], data[param], marker='o', linestyle='_', label=param)
+        ax.set_title(param.replace("_", " ").title(), fontsize=16, fontname='Times New Roman', fontweight='bold')
         ax.set_xlabel('Time')
         ax.set_ylabel(param)
         ax.legend()
