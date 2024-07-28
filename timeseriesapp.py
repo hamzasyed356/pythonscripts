@@ -276,10 +276,14 @@ multi_graphs = [
     ('cstr-ph', 'cstr-ec')
 ]
 
-# Create a dictionary of multi-data parameter frames
-multi_param_frames = {f"{params[0]} vs {params[1]}": ctk.CTkFrame(scrollable_frame, width=600, height=400) for params in multi_graphs}
+# Create a dictionary of parameter frames
+param_frames = {param: ctk.CTkFrame(scrollable_frame, width=600, height=400, fg_color="transparent") for param in parameters}
+multi_param_frames = {f"{params[0]} vs {params[1]}": ctk.CTkFrame(scrollable_frame, width=600, height=400, fg_color="transparent") for params in multi_graphs}
 
 # Arrange frames in a grid
+for i, param in enumerate(param_frames.keys()):
+    param_frames[param].grid(row=i // 3, column=i % 3, padx=10, pady=10)
+
 for i, (params, frame) in enumerate(multi_param_frames.items()):
     frame.grid(row=(len(param_frames) // 3) + (i // 3), column=i % 3, padx=10, pady=10)
     param_label = ctk.CTkLabel(frame, text=params, font=("Helvetica", 20, 'bold'))
@@ -417,15 +421,23 @@ graph_widgets = {}
 
 # Create a dictionary of parameter frames
 param_frames = {param: ctk.CTkFrame(scrollable_frame, width=600, height=400, fg_color="transparent") for param in parameters}
+multi_param_frames = {f"{params[0]} vs {params[1]}": ctk.CTkFrame(scrollable_frame, width=600, height=400, fg_color="transparent") for params in multi_graphs}
 
 # Arrange frames in a grid
 for i, param in enumerate(param_frames.keys()):
     param_frames[param].grid(row=i // 3, column=i % 3, padx=10, pady=10)
 
-# Configure grid to expand and fill the window
-for i in range(4):
-    app.grid_columnconfigure(i, weight=1)
-app.grid_rowconfigure(1, weight=1)
+for i, (params, frame) in enumerate(multi_param_frames.items()):
+    frame.grid(row=(len(param_frames) // 3) + (i // 3), column=i % 3, padx=10, pady=10)
+    param_label = ctk.CTkLabel(frame, text=params, font=("Helvetica", 20, 'bold'))
+    param_label.pack(pady=10)
+    multi_frame_plot = plt.Figure(figsize=(6, 4))
+    ax = multi_frame_plot.add_subplot(111)
+    canvas = FigureCanvasTkAgg(multi_frame_plot, master=frame)
+    canvas.get_tk_widget().pack(fill=tk.BOTH, expand=1)
+    param_list = params.split(' vs ')
+    anim = FuncAnimation(multi_frame_plot, animate_multi_graph(param_list, ax), interval=5000, save_count=100, cache_frame_data=False)
+    graph_widgets[params] = canvas
 
 # Start the periodic update
 app.after(5000, periodic_update)
