@@ -102,8 +102,8 @@ copyright_label = ctk.CTkLabel(master=footer_frame, text="All rights reserved ©
 copyright_label.grid(row=0, column=0, pady=10)
 
 # Create a scrollable frame for the graphs
-canvas = tk.Canvas(app, bd=0, highlightthickness=0)  # Remove border and highlight thickness
-scrollbar = tk.Scrollbar(app, orient="vertical", command=canvas.yview)
+canvas = Canvas(app, bd=0, highlightthickness=0)  # Remove border and highlight thickness
+scrollbar = Scrollbar(app, orient="vertical", command=canvas.yview)
 scrollable_frame = ctk.CTkFrame(canvas)
 
 scrollable_frame.bind(
