@@ -120,7 +120,7 @@ def display_graph(param):
     to_date_label = ctk.CTkLabel(row2_frame, text="To Date:")
     to_date_label.pack(side=tk.LEFT, padx=5)
     to_date_input = DateEntry(row2_frame, date_pattern='yyyy-mm-dd')
-    to_date_input.pack(side=tk.LEFT, padx=5)
+    to_date_input.pack(side=tk.LEFT, padx5)
 
     to_time_label = ctk.CTkLabel(row2_frame, text="To Time (HH:MM):")
     to_time_label.pack(side=tk.LEFT, padx=5)
@@ -138,8 +138,13 @@ def display_graph(param):
     save_button.pack(side=tk.LEFT, padx=5)
 
     now = datetime.now()
-    one_hour_ago = now - timedelta(hours=1)
-    fetch_and_display_timeseries(param, one_hour_ago.strftime('%Y-%m-%d %H:%M:%S'), now.strftime('%Y-%m-%d %H:%M:%S'), canvas, figure, timeseries_window)
+    one_day_ago = now - timedelta(days=1)
+    from_date_input.set_date(one_day_ago)
+    from_time_input.insert(0, one_day_ago.strftime('%H:%M'))
+    to_date_input.set_date(now)
+    to_time_input.insert(0, now.strftime('%H:%M'))
+
+    fetch_and_display_timeseries(param, one_day_ago.strftime('%Y-%m-%d %H:%M:%S'), now.strftime('%Y-%m-%d %H:%M:%S'), canvas, figure, timeseries_window)
 
 # Create a menu bar
 menu_bar = tk.Menu(app)
@@ -171,8 +176,8 @@ def fetch_data(param, from_datetime, to_datetime):
 # Function to update the graphs with data from the database
 def update_graphs():
     now = datetime.now()
-    one_hour_ago = now - timedelta(hours=1)
-    from_datetime = one_hour_ago.strftime('%Y-%m-%d %H:%M:%S')
+    one_day_ago = now - timedelta(days=1)
+    from_datetime = one_day_ago.strftime('%Y-%m-%d %H:%M:%S')
     to_datetime = now.strftime('%Y-%m-%d %H:%M:%S')
 
     for param in parameters:
