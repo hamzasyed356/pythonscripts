@@ -8,14 +8,6 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
 import psycopg2
 from datetime import datetime, timedelta
-import os
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
-
-# Set the DISPLAY environment variable for the timeseries app
-os.environ['DISPLAY'] = os.getenv('DISPLAY_TIMESERIES')
 
 # Initialize the main application
 app = ctk.CTk()
