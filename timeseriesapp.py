@@ -185,7 +185,7 @@ def update_graphs():
 
             ax = graph_widgets[param][1]
             ax.clear()
-            ax.plot(data['timestamp'], data[param], marker='o', linestyle='_', label=param)
+            ax.plot(data['timestamp'], data[param], marker='o', linestyle='-', label=param)
             ax.set_title(param.replace("_", " ").title(), fontsize=16, fontname='Times New Roman', fontweight='bold')
             ax.set_xlabel('Time')
             ax.set_ylabel(param)
@@ -212,7 +212,7 @@ def fetch_and_display_timeseries(param, from_datetime, to_datetime, canvas, figu
     if not data.empty:
         ax = figure.add_subplot(111)
         ax.clear()
-        ax.plot(data['timestamp'], data[param], marker='o', linestyle='_', label=param)
+        ax.plot(data['timestamp'], data[param], marker='o', linestyle='-', label=param)
         ax.set_title(param.replace("_", " ").title(), fontsize=16, fontname='Times New Roman', fontweight='bold')
         ax.set_xlabel('Time')
         ax.set_ylabel(param)
