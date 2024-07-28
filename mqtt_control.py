@@ -86,7 +86,7 @@ def control_cstr_relays(client):
             return
         start_timestamp = time.mktime(db_start_time.timetuple())  # Convert timestamp to time in seconds since epoch
     
-    initial_temp = 20  # Assume an initial starting temperature; adjust as needed
+    initial_temp = 28  # Assume an initial starting temperature; adjust as needed
     current_setpoint = calculate_setpoint(start_timestamp, set_cstr_temp, initial_temp, over_duration, temp_change)
 
     if cstr_temp is not None:
@@ -95,7 +95,7 @@ def control_cstr_relays(client):
         heater2_state = 'off'
         cstr_in_state = 'on'
 
-        if cstr_temp <= current_setpoint - 0.2:
+        if cstr_temp <= current_setpoint - 0.02:
             heater1_state = 'on'
         if cstr_temp <= current_setpoint - 1:
             heater2_state = 'on'
