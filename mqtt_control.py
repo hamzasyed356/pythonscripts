@@ -22,6 +22,7 @@ DATABASE_CONFIG = {
 cstr_temp = None
 mtank_temp = None
 mtank_level = None
+cstr_level = None
 set_cstr_temp = None
 over_duration = None
 temp_change = None
@@ -30,6 +31,7 @@ max_attained_temp = None  # Variable to store the maximum attained temperature
 last_temp_update = None  # Timestamp of the last temperature update
 last_temp_value = None  # Last temperature value
 last_settings_update = None  # Timestamp of the last settings update
+last_cstr_level = None  # Last cstr-level value
 settings_update_interval = 300  # Interval to refresh settings (in seconds)
 
 # Global variables to store the last states of the relays
@@ -74,7 +76,7 @@ def on_connect(client, userdata, flags, rc):
         client.subscribe(topic)
 
 def on_message(client, userdata, msg):
-    global cstr_temp, mtank_temp, mtank_level, last_states, last_temp_update, last_temp_value
+    global cstr_temp, mtank_temp, mtank_level, cstr_level, last_states, last_temp_update, last_temp_value, last_cstr_level
 
     topic = msg.topic
     payload = msg.payload.decode()
@@ -88,6 +90,8 @@ def on_message(client, userdata, msg):
             mtank_temp = float(payload)
         elif topic == 'mtank-level':
             mtank_level = float(payload)
+        elif topic == 'cstr-level':
+            cstr_level = float(payload)
 
         # Update temperature rate control variables
         current_time = time.time()
@@ -119,7 +123,7 @@ def calculate_setpoint(start_time, set_temp, initial_temp, over_duration, temp_c
 
 # Function to control relays based on sensor data
 def control_relays(client):
-    global set_cstr_temp, over_duration, temp_change, start_time, max_attained_temp, last_states
+    global set_cstr_temp, over_duration, temp_change, start_time, max_attained_temp, last_states, last_cstr_level
 
     refresh_settings()  # Check and refresh settings periodically
 
@@ -171,6 +175,13 @@ def control_relays(client):
             elif mtank_level < 8000:
                 cstr_in_state = 'on'
                 mtank_out_state = 'off'
+
+        # Ensure cstr/in is off if mtank/out is on and cstr-level is increasing
+        if last_states['mtank/out'] == 'on' and cstr_level is not None and last_cstr_level is not None:
+            if cstr_level > last_cstr_level:
+                cstr_in_state = 'off'
+        
+        last_cstr_level = cstr_level
 
         # Publish only if state has changed
         if last_states['cstr/heater1'] != heater1_state:
