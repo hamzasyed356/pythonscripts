@@ -197,6 +197,32 @@ def update_graphs():
             ax.legend()
             graph_widgets[param][2].draw()
 
+    # Multi-graphs
+    multi_graphs = [
+        ('ORP and EC', 'cstr_orp', 'cstr_ec'),
+        ('ORP and PH', 'cstr_orp', 'cstr_ph'),
+        ('EC and PH', 'cstr_ec', 'cstr_ph')
+    ]
+    for i, (title, col1, col2) in enumerate(multi_graphs):
+        data_col1 = fetch_data(col1, from_datetime, to_datetime)
+        data_col2 = fetch_data(col2, from_datetime, to_datetime)
+        
+        if not data_col1.empty and not data_col2.empty:
+            if title not in graph_widgets:
+                fig, ax = plt.subplots(figsize=(6, 4))
+                graph_widgets[title] = (fig, ax, FigureCanvasTkAgg(fig, master=scrollable_frame))
+                graph_widgets[title][2].get_tk_widget().grid(row=(i + 12) // 3, column=(i + 12) % 3, padx=10, pady=10, sticky='nsew')
+
+            ax = graph_widgets[title][1]
+            ax.clear()
+            ax.plot(data_col1['timestamp'], data_col1[col1], marker='o', linestyle='-', label=col1)
+            ax.plot(data_col2['timestamp'], data_col2[col2], marker='o', linestyle='-', label=col2)
+            ax.set_title(title, fontsize=16, fontname='Times New Roman', fontweight='bold')
+            ax.set_xlabel('Time')
+            ax.set_ylabel('Values')
+            ax.legend()
+            graph_widgets[title][2].draw()
+
     scrollable_frame.update_idletasks()
 
 # Function to fetch and display the time series
