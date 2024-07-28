@@ -120,7 +120,7 @@ def display_graph(param):
     to_date_label = ctk.CTkLabel(row2_frame, text="To Date:")
     to_date_label.pack(side=tk.LEFT, padx=5)
     to_date_input = DateEntry(row2_frame, date_pattern='yyyy-mm-dd')
-    to_date_input.pack(side=tk.LEFT, padx5)
+    to_date_input.pack(side=tk.LEFT, padx=5)
 
     to_time_label = ctk.CTkLabel(row2_frame, text="To Time (HH:MM):")
     to_time_label.pack(side=tk.LEFT, padx=5)
