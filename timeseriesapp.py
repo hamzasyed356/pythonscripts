@@ -269,12 +269,8 @@ for param1, param2 in combined_parameters:
     menu_bar.add_command(label=f"{param1.replace('_', ' ').title()} & {param2.replace('_', ' ').title()}",
                          command=lambda p1=param1, p2=param2: display_combined_graph(p1, p2))
 
-# Multi-data graphs
-multi_graphs = [
-    ('cstr-orp', 'cstr-ec'),
-    ('cstr-orp', 'cstr-ph'),
-    ('cstr-ph', 'cstr-ec')
-]
+# Store the FigureCanvasTkAgg objects to avoid redrawing
+graph_widgets = {}
 
 # Create a dictionary of parameter frames
 param_frames = {param: ctk.CTkFrame(scrollable_frame, width=600, height=400, fg_color="transparent") for param in parameters}
@@ -415,9 +411,6 @@ def save_graph_as_image(figure, timeseries_window):
 def periodic_update():
     update_graphs()
     app.after(5000, periodic_update)
-
-# Store the FigureCanvasTkAgg objects to avoid redrawing
-graph_widgets = {}
 
 # Create a dictionary of parameter frames
 param_frames = {param: ctk.CTkFrame(scrollable_frame, width=600, height=400, fg_color="transparent") for param in parameters}
