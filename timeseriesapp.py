@@ -173,7 +173,7 @@ def display_graph(param):
 
     figure = plt.Figure()
     canvas = FigureCanvasTkAgg(figure, master=timeseries_window)
-    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)  # Using pack instead of grid
 
     fetch_button = ctk.CTkButton(row2_frame, text="Show Graph", command=lambda: fetch_and_display(param, from_date_input, from_time_input, to_date_input, to_time_input, canvas, figure, timeseries_window))
     fetch_button.pack(side=tk.LEFT, padx=5)
@@ -227,7 +227,7 @@ def display_combined_graph(param1, param2):
 
     figure = plt.Figure()
     canvas = FigureCanvasTkAgg(figure, master=timeseries_window)
-    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)  # Using pack instead of grid
 
     fetch_button = ctk.CTkButton(row2_frame, text="Show Graph", command=lambda: fetch_and_display_combined(param1, param2, from_date_input, from_time_input, to_date_input, to_time_input, canvas, figure, timeseries_window))
     fetch_button.pack(side=tk.LEFT, padx=5)
@@ -287,7 +287,7 @@ for i, (params, frame) in enumerate(multi_param_frames.items()):
     multi_frame_plot = plt.Figure(figsize=(6, 4))
     ax = multi_frame_plot.add_subplot(111)
     canvas = FigureCanvasTkAgg(multi_frame_plot, master=frame)
-    canvas.get_tk_widget().pack(fill=tk.BOTH, expand=1)
+    canvas.get_tk_widget().pack(fill=tk.BOTH, expand=1)  # Using pack instead of grid
     param_list = params.split(' vs ')
     anim = FuncAnimation(multi_frame_plot, animate_multi_graph(param_list, ax), interval=5000, save_count=100, cache_frame_data=False)
     graph_widgets[params] = canvas
@@ -317,7 +317,7 @@ def update_graphs():
             if param not in graph_widgets:
                 fig, ax = plt.subplots(figsize=(6, 4))
                 graph_widgets[param] = (fig, ax, FigureCanvasTkAgg(fig, master=param_frames[param]))
-                graph_widgets[param][2].get_tk_widget().pack(fill=tk.BOTH, expand=1)
+                graph_widgets[param][2].get_tk_widget().pack(fill=tk.BOTH, expand=1)  # Using pack instead of grid
 
             ax = graph_widgets[param][1]
             ax.clear()
@@ -335,7 +335,7 @@ def update_graphs():
             if frame_key not in graph_widgets:
                 fig, ax = plt.subplots(figsize=(6, 4))
                 graph_widgets[frame_key] = (fig, ax, FigureCanvasTkAgg(fig, master=multi_param_frames[frame_key]))
-                graph_widgets[frame_key][2].get_tk_widget().pack(fill=tk.BOTH, expand=1)
+                graph_widgets[frame_key][2].get_tk_widget().pack(fill=tk.BOTH, expand=1)  # Using pack instead of grid
 
             ax = graph_widgets[frame_key][1]
             ax.clear()
@@ -411,26 +411,6 @@ def save_graph_as_image(figure, timeseries_window):
 def periodic_update():
     update_graphs()
     app.after(5000, periodic_update)
-
-# Create a dictionary of parameter frames
-param_frames = {param: ctk.CTkFrame(scrollable_frame, width=600, height=400, fg_color="transparent") for param in parameters}
-multi_param_frames = {f"{params[0]} vs {params[1]}": ctk.CTkFrame(scrollable_frame, width=600, height=400, fg_color="transparent") for params in multi_graphs}
-
-# Arrange frames in a grid
-for i, param in enumerate(param_frames.keys()):
-    param_frames[param].grid(row=i // 3, column=i % 3, padx=10, pady=10)
-
-for i, (params, frame) in enumerate(multi_param_frames.items()):
-    frame.grid(row=(len(param_frames) // 3) + (i // 3), column=i % 3, padx=10, pady=10)
-    param_label = ctk.CTkLabel(frame, text=params, font=("Helvetica", 20, 'bold'))
-    param_label.pack(pady=10)
-    multi_frame_plot = plt.Figure(figsize=(6, 4))
-    ax = multi_frame_plot.add_subplot(111)
-    canvas = FigureCanvasTkAgg(multi_frame_plot, master=frame)
-    canvas.get_tk_widget().pack(fill=tk.BOTH, expand=1)
-    param_list = params.split(' vs ')
-    anim = FuncAnimation(multi_frame_plot, animate_multi_graph(param_list, ax), interval=5000, save_count=100, cache_frame_data=False)
-    graph_widgets[params] = canvas
 
 # Start the periodic update
 app.after(5000, periodic_update)
