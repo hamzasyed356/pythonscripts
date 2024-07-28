@@ -21,17 +21,20 @@ DATABASE_CONFIG = {
 # Global variables to store sensor data
 cstr_temp = None
 mtank_temp = None
+mtank_level = None
 set_cstr_temp = None
 over_duration = None
 temp_change = None
 start_time = time.time()
+max_attained_temp = None  # Variable to store the maximum attained temperature
 
 # Global variables to store the last states of the relays
 last_states = {
     'cstr/heater1': None,
     'cstr/heater2': None,
     'mtank/out': None,
-    'cstr/in': None
+    'cstr/in': None,
+    'mtank/in': None
 }
 
 # Function to get set temperatures from the database
@@ -54,7 +57,7 @@ def on_connect(client, userdata, flags, rc):
         client.subscribe(topic)
 
 def on_message(client, userdata, msg):
-    global cstr_temp, mtank_temp, last_states
+    global cstr_temp, mtank_temp, mtank_level, last_states
 
     topic = msg.topic
     payload = msg.payload.decode()
@@ -66,6 +69,8 @@ def on_message(client, userdata, msg):
             cstr_temp = float(payload)
         elif topic == 'mtank-temp':
             mtank_temp = float(payload)
+        elif topic == 'mtank-level':
+            mtank_level = float(payload)
 
         control_relays(client)
     elif topic in CONTROL_TOPICS:
@@ -81,7 +86,7 @@ def calculate_setpoint(start_time, set_temp, initial_temp, over_duration, temp_c
 
 # Function to control relays based on sensor data
 def control_relays(client):
-    global set_cstr_temp, over_duration, temp_change, start_time, last_states
+    global set_cstr_temp, over_duration, temp_change, start_time, max_attained_temp, last_states
 
     if set_cstr_temp is None:
         set_cstr_temp, over_duration, temp_change = get_set_temperatures()
@@ -94,11 +99,19 @@ def control_relays(client):
     current_setpoint = calculate_setpoint(start_time, set_cstr_temp, initial_temp, over_duration, temp_change)
 
     if cstr_temp is not None and mtank_temp is not None:
+        # Update the maximum attained temperature
+        if max_attained_temp is None or cstr_temp > max_attained_temp:
+            max_attained_temp = cstr_temp
+
+        # Ensure temperature does not fall below the maximum attained temperature
+        current_setpoint = max(current_setpoint, max_attained_temp)
+
         # Determine relay states
         heater1_state = 'off'
         heater2_state = 'off'
         mtank_out_state = 'off'
         cstr_in_state = 'on'
+        mtank_in_state = 'off'
 
         if cstr_temp <= current_setpoint - 0.02:
             heater1_state = 'on'
@@ -111,6 +124,15 @@ def control_relays(client):
             cstr_in_state = 'off'
         elif abs(mtank_temp - cstr_temp) <= 1:
             cstr_in_state = 'on'
+
+        # Check mtank level to control mtank/in and mtank/out
+        if mtank_level is not None:
+            if mtank_level >= 9000:
+                cstr_in_state = 'off'
+                mtank_out_state = 'on'
+            elif mtank_level < 8000:
+                cstr_in_state = 'on'
+                mtank_out_state = 'off'
 
         # Publish only if state has changed
         if last_states['cstr/heater1'] != heater1_state:
@@ -125,6 +147,9 @@ def control_relays(client):
         if last_states['cstr/in'] != cstr_in_state:
             client.publish('cstr/in', cstr_in_state)
             last_states['cstr/in'] = cstr_in_state
+        if last_states['mtank/in'] != mtank_in_state:
+            client.publish('mtank/in', mtank_in_state)
+            last_states['mtank/in'] = mtank_in_state
 
 # Initialize MQTT client
 client = mqtt.Client()
