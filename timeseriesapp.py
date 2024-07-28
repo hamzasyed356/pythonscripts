@@ -146,6 +146,60 @@ def display_graph(param):
 
     fetch_and_display_timeseries(param, one_day_ago.strftime('%Y-%m-%d %H:%M:%S'), now.strftime('%Y-%m-%d %H:%M:%S'), canvas, figure, timeseries_window)
 
+# Function to display combined graphs
+def display_combined_graph(param1, param2):
+    clear_main_area()
+    timeseries_window = ctk.CTkFrame(app)
+    timeseries_window.grid(row=1, column=0, columnspan=4, sticky="nsew", padx=10, pady=10)
+
+    input_frame = ctk.CTkFrame(timeseries_window)
+    input_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+
+    row1_frame = ctk.CTkFrame(input_frame)
+    row1_frame.pack(side=tk.TOP, fill=tk.X)
+
+    from_date_label = ctk.CTkLabel(row1_frame, text="From Date:")
+    from_date_label.pack(side=tk.LEFT, padx=5)
+    from_date_input = DateEntry(row1_frame, date_pattern='yyyy-mm-dd')
+    from_date_input.pack(side=tk.LEFT, padx=5)
+
+    from_time_label = ctk.CTkLabel(row1_frame, text="From Time (HH:MM):")
+    from_time_label.pack(side=tk.LEFT, padx=5)
+    from_time_input = ctk.CTkEntry(row1_frame)
+    from_time_input.pack(side=tk.LEFT, padx=5)
+
+    row2_frame = ctk.CTkFrame(input_frame)
+    row2_frame.pack(side=tk.TOP, fill=tk.X, pady=(10, 0))
+
+    to_date_label = ctk.CTkLabel(row2_frame, text="To Date:")
+    to_date_label.pack(side=tk.LEFT, padx=5)
+    to_date_input = DateEntry(row2_frame, date_pattern='yyyy-mm-dd')
+    to_date_input.pack(side=tk.LEFT, padx=5)
+
+    to_time_label = ctk.CTkLabel(row2_frame, text="To Time (HH:MM):")
+    to_time_label.pack(side=tk.LEFT, padx=5)
+    to_time_input = ctk.CTkEntry(row2_frame)
+    to_time_input.pack(side=tk.LEFT, padx=5)
+
+    figure = plt.Figure()
+    canvas = FigureCanvasTkAgg(figure, master=timeseries_window)
+    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+    fetch_button = ctk.CTkButton(row2_frame, text="Show Graph", command=lambda: fetch_and_display_combined(param1, param2, from_date_input, from_time_input, to_date_input, to_time_input, canvas, figure, timeseries_window))
+    fetch_button.pack(side=tk.LEFT, padx=5)
+
+    save_button = ctk.CTkButton(row2_frame, text="Save Image", command=lambda: save_graph_as_image(figure, timeseries_window))
+    save_button.pack(side=tk.LEFT, padx=5)
+
+    now = datetime.now()
+    one_day_ago = now - timedelta(days=1)
+    from_date_input.set_date(one_day_ago)
+    from_time_input.insert(0, one_day_ago.strftime('%H:%M'))
+    to_date_input.set_date(now)
+    to_time_input.insert(0, now.strftime('%H:%M'))
+
+    fetch_and_display_combined_timeseries((param1, param2), one_day_ago.strftime('%Y-%m-%d %H:%M:%S'), now.strftime('%Y-%m-%d %H:%M:%S'), canvas, figure, timeseries_window)
+
 # Create a menu bar
 menu_bar = tk.Menu(app)
 app.config(menu=menu_bar)
@@ -156,10 +210,20 @@ menu_bar.add_command(label="View All", command=display_all_graphs)
 
 # Parameters
 parameters = ['cstr_ph', 'cstr_temp', 'cstr_level', 'cstr_orp', 'cstr_ec', 'cstr_tds', 'mtank_temp', 'mtank_level', 'effluent_level', 'flux']
+combined_parameters = [
+    ('cstr_ec', 'cstr_ph'),
+    ('cstr_ec', 'cstr_orp'),
+    ('cstr_ph', 'cstr_orp')
+]
 
 # Add individual graph buttons
 for param in parameters:
     menu_bar.add_command(label=param.replace('_', ' ').title(), command=lambda p=param: display_graph(p))
+
+# Add combined graph buttons
+for param1, param2 in combined_parameters:
+    menu_bar.add_command(label=f"{param1.replace('_', ' ').title()} & {param2.replace('_', ' ').title()}",
+                         command=lambda p1=param1, p2=param2: display_combined_graph(p1, p2))
 
 # Function to fetch data from the database
 def fetch_data(param, from_datetime, to_datetime):
@@ -172,6 +236,20 @@ def fetch_data(param, from_datetime, to_datetime):
         return df
     else:
         return pd.DataFrame(columns=['timestamp', param])
+
+# Function to fetch multiple parameters data from the database
+def fetch_multiple_data(params, from_datetime, to_datetime):
+    param_query = ", ".join(params)
+    query = f"SELECT timestamp, {param_query} FROM sensor_data WHERE timestamp BETWEEN '{from_datetime}' AND '{to_datetime}' ORDER BY timestamp ASC"
+    cur.execute(query)
+    data = cur.fetchall()
+    if data:
+        columns = ['timestamp'] + params
+        df = pd.DataFrame(data, columns=columns)
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        return df
+    else:
+        return pd.DataFrame(columns=['timestamp'] + params)
 
 # Function to update the graphs with data from the database
 def update_graphs():
@@ -223,6 +301,32 @@ def fetch_and_display_timeseries(param, from_datetime, to_datetime, canvas, figu
         ax.set_ylabel(param)
         ax.legend()
         canvas.draw()
+
+# Function to fetch and display combined time series from the database
+def fetch_and_display_combined_timeseries(params, from_datetime, to_datetime, canvas, figure, timeseries_window):
+    data = fetch_multiple_data(params, from_datetime, to_datetime)
+    if not data.empty:
+        ax = figure.add_subplot(111)
+        ax.clear()
+        for param in params:
+            ax.plot(data['timestamp'], data[param], marker='o', linestyle='-', label=param)
+        ax.set_title(" & ".join([param.replace("_", " ").title() for param in params]), fontsize=16, fontname='Times New Roman', fontweight='bold')
+        ax.set_xlabel('Time')
+        ax.set_ylabel(", ".join(params))
+        ax.legend()
+        canvas.draw()
+
+# Function to fetch and display combined graphs
+def fetch_and_display_combined(param1, param2, from_date_input, from_time_input, to_date_input, to_time_input, canvas, figure, timeseries_window):
+    from_date_str = from_date_input.get_date().strftime('%Y-%m-%d')
+    from_time_str = from_time_input.get()
+    to_date_str = to_date_input.get_date().strftime('%Y-%m-%d')
+    to_time_str = to_time_input.get()
+
+    from_datetime = f"{from_date_str} {from_time_str}:00"
+    to_datetime = f"{to_date_str} {to_time_str}:00"
+
+    fetch_and_display_combined_timeseries((param1, param2), from_datetime, to_datetime, canvas, figure, timeseries_window)
 
 # Function to save the graph as an image
 def save_graph_as_image(figure, timeseries_window):
