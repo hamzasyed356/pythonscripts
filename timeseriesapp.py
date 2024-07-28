@@ -103,7 +103,7 @@ copyright_label.grid(row=0, column=0, pady=10)
 
 # Create a scrollable frame for the graphs
 canvas = tk.Canvas(app, bd=0, highlightthickness=0)  # Remove border and highlight thickness
-scrollbar = Scrollbar(app, orient="vertical", command=canvas.yview)
+scrollbar = tk.Scrollbar(app, orient="vertical", command=canvas.yview)
 scrollable_frame = ctk.CTkFrame(canvas)
 
 scrollable_frame.bind(
