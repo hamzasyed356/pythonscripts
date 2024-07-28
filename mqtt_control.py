@@ -24,7 +24,7 @@ mtank_temp = None
 set_cstr_temp = None
 over_duration = None
 temp_change = None
-start_timestamp = None
+start_time = time.time()
 
 # Global variables to store the last states of the relays
 last_states = {
@@ -34,19 +34,18 @@ last_states = {
     'cstr/in': None
 }
 
-# Function to get set temperatures and timestamp from the database
-def get_set_temperatures_and_start_time():
+# Function to get set temperatures from the database
+def get_set_temperatures():
     try:
         conn = psycopg2.connect(**DATABASE_CONFIG)
         cursor = conn.cursor()
-        cursor.execute("SELECT set_temp, over_duration, temp_change, timestamp FROM temp_setting ORDER BY timestamp DESC LIMIT 1")
+        cursor.execute("SELECT set_temp, over_duration, temp_change FROM temp_setting ORDER BY timestamp DESC LIMIT 1")
         result = cursor.fetchone()
         conn.close()
-        print(f"Fetched settings from DB: {result}")
-        return result if result else (None, None, None, None)
+        return result if result else (None, None, None)
     except Exception as e:
-        print(f"Error fetching set temperatures and timestamp: {e}")
-        return (None, None, None, None)
+        print(f"Error fetching set temperatures: {e}")
+        return (None, None, None)
 
 # MQTT callbacks
 def on_connect(client, userdata, flags, rc):
@@ -55,7 +54,7 @@ def on_connect(client, userdata, flags, rc):
         client.subscribe(topic)
 
 def on_message(client, userdata, msg):
-    global cstr_temp, mtank_temp
+    global cstr_temp, mtank_temp, last_states
 
     topic = msg.topic
     payload = msg.payload.decode()
@@ -65,63 +64,47 @@ def on_message(client, userdata, msg):
 
         if topic == 'cstr-temp':
             cstr_temp = float(payload)
-            print(f"Received cstr-temp: {cstr_temp}")
         elif topic == 'mtank-temp':
             mtank_temp = float(payload)
-            print(f"Received mtank-temp: {mtank_temp}")
+
+        control_relays(client)
+    elif topic in CONTROL_TOPICS:
+        last_states[topic] = payload
 
 # Function to calculate the current setpoint temperature
-def calculate_setpoint(start_timestamp, set_temp, initial_temp, over_duration, temp_change):
-    current_timestamp = time.time()
-    elapsed_time = current_timestamp - start_timestamp
-    max_temp_increase = (elapsed_time / (over_duration * 3600)) * temp_change  # Convert over_duration to seconds
+def calculate_setpoint(start_time, set_temp, initial_temp, over_duration, temp_change):
+    elapsed_time = time.time() - start_time
+    hours_elapsed = elapsed_time / 3600
+    max_temp_increase = (hours_elapsed / over_duration) * temp_change
     current_setpoint = initial_temp + max_temp_increase
     return min(current_setpoint, set_temp)
 
-# Function to control CSTR relays based on sensor data
-def control_cstr_relays(client):
-    global set_cstr_temp, over_duration, temp_change, start_timestamp, last_states
+# Function to control relays based on sensor data
+def control_relays(client):
+    global set_cstr_temp, over_duration, temp_change, start_time, last_states
 
     if set_cstr_temp is None:
-        set_cstr_temp, over_duration, temp_change, db_start_time = get_set_temperatures_and_start_time()
+        set_cstr_temp, over_duration, temp_change = get_set_temperatures()
         if set_cstr_temp is None:
             print("Set temperatures not available")
             return
-        start_timestamp = time.mktime(db_start_time.timetuple())  # Convert timestamp to time in seconds since epoch
+        start_time = time.time()
     
     initial_temp = 28  # Assume an initial starting temperature; adjust as needed
-    current_setpoint = calculate_setpoint(start_timestamp, set_cstr_temp, initial_temp, over_duration, temp_change)
-    print(f"Calculated current setpoint: {current_setpoint}")
+    current_setpoint = calculate_setpoint(start_time, set_cstr_temp, initial_temp, over_duration, temp_change)
 
-    if cstr_temp is not None:
+    if cstr_temp is not None and mtank_temp is not None:
         # Determine relay states
         heater1_state = 'off'
         heater2_state = 'off'
+        mtank_out_state = 'off'
         cstr_in_state = 'on'
 
         if cstr_temp <= current_setpoint - 0.02:
             heater1_state = 'on'
-        if cstr_temp <= current_setpoint - 1:
             heater2_state = 'on'
-        if cstr_temp >= set_cstr_temp:
-            heater1_state = 'off'
-            heater2_state = 'off'
-
-        print(f"cstr_temp: {cstr_temp}, heater1_state: {heater1_state}, heater2_state: {heater2_state}")
-
-        # Publish only if state has changed
-        publish_if_changed(client, 'cstr/heater1', heater1_state)
-        publish_if_changed(client, 'cstr/heater2', heater2_state)
-        publish_if_changed(client, 'cstr/in', cstr_in_state)
-
-# Function to control MTANK relays based on sensor data
-def control_mtank_relays(client):
-    global last_states
-
-    if cstr_temp is not None and mtank_temp is not None:
-        # Determine relay states
-        mtank_out_state = 'off'
-        cstr_in_state = 'on'
+        elif cstr_temp <= current_setpoint - 1:
+            heater1_state = 'on'
 
         if abs(mtank_temp - cstr_temp) >= 5:
             mtank_out_state = 'on'
@@ -129,33 +112,24 @@ def control_mtank_relays(client):
         elif abs(mtank_temp - cstr_temp) <= 1:
             cstr_in_state = 'on'
 
-        print(f"mtank_temp: {mtank_temp}, cstr_temp: {cstr_temp}, mtank_out_state: {mtank_out_state}")
-
         # Publish only if state has changed
-        publish_if_changed(client, 'mtank/out', mtank_out_state)
-        publish_if_changed(client, 'cstr/in', cstr_in_state)
+        if last_states['cstr/heater1'] != heater1_state:
+            client.publish('cstr/heater1', heater1_state)
+            last_states['cstr/heater1'] = heater1_state
+        if last_states['cstr/heater2'] != heater2_state:
+            client.publish('cstr/heater2', heater2_state)
+            last_states['cstr/heater2'] = heater2_state
+        if last_states['mtank/out'] != mtank_out_state:
+            client.publish('mtank/out', mtank_out_state)
+            last_states['mtank/out'] = mtank_out_state
+        if last_states['cstr/in'] != cstr_in_state:
+            client.publish('cstr/in', cstr_in_state)
+            last_states['cstr/in'] = cstr_in_state
 
-# Function to publish to a topic if the state has changed
-def publish_if_changed(client, topic, state):
-    if last_states[topic] != state:
-        print(f"Publishing {state} to {topic}")
-        client.publish(topic, state)
-        last_states[topic] = state
+# Initialize MQTT client
+client = mqtt.Client()
+client.on_connect = on_connect
+client.on_message = on_message
 
-# Main function to initialize and start the MQTT client
-def main():
-    client = mqtt.Client()
-    client.on_connect = on_connect
-    client.on_message = on_message
-
-    client.connect(MQTT_BROKER, MQTT_PORT, 60)
-    client.loop_start()
-
-    # Keep the program running and control the relays periodically
-    while True:
-        control_cstr_relays(client)
-        control_mtank_relays(client)
-        time.sleep(1)
-
-if __name__ == '__main__':
-    main()
+client.connect(MQTT_BROKER, MQTT_PORT, 60)
+client.loop_forever()
