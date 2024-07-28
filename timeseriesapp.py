@@ -133,8 +133,8 @@ def clear_main_area():
 # Function to display all graphs
 def display_all_graphs():
     clear_main_area()
-    canvas.grid(row=1, column=0, columnspan=4, sticky="nsew")
-    scrollbar.grid(row=1, column=4, sticky="ns")
+    canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)  # Using pack instead of grid
+    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)  # Using pack instead of grid
 
 # Function to display individual graphs
 def display_graph(param):
