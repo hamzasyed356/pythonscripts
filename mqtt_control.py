@@ -27,6 +27,10 @@ over_duration = None
 temp_change = None
 start_time = time.time()
 max_attained_temp = None  # Variable to store the maximum attained temperature
+last_temp_update = None  # Timestamp of the last temperature update
+last_temp_value = None  # Last temperature value
+last_settings_update = None  # Timestamp of the last settings update
+settings_update_interval = 300  # Interval to refresh settings (in seconds)
 
 # Global variables to store the last states of the relays
 last_states = {
@@ -50,6 +54,19 @@ def get_set_temperatures():
         print(f"Error fetching set temperatures: {e}")
         return (None, None, None)
 
+# Function to refresh settings from the database periodically
+def refresh_settings():
+    global set_cstr_temp, over_duration, temp_change, start_time, last_settings_update
+
+    current_time = time.time()
+    if last_settings_update is None or (current_time - last_settings_update) >= settings_update_interval:
+        new_set_temp, new_over_duration, new_temp_change = get_set_temperatures()
+        if new_set_temp is not None:
+            set_cstr_temp, over_duration, temp_change = new_set_temp, new_over_duration, new_temp_change
+            start_time = current_time  # Reset the start time to current time
+            last_settings_update = current_time
+            print(f"Settings updated: set_temp={set_cstr_temp}, over_duration={over_duration}, temp_change={temp_change}")
+
 # MQTT callbacks
 def on_connect(client, userdata, flags, rc):
     print(f"Connected to MQTT broker with code {rc}")
@@ -57,7 +74,7 @@ def on_connect(client, userdata, flags, rc):
         client.subscribe(topic)
 
 def on_message(client, userdata, msg):
-    global cstr_temp, mtank_temp, mtank_level, last_states
+    global cstr_temp, mtank_temp, mtank_level, last_states, last_temp_update, last_temp_value
 
     topic = msg.topic
     payload = msg.payload.decode()
@@ -71,6 +88,22 @@ def on_message(client, userdata, msg):
             mtank_temp = float(payload)
         elif topic == 'mtank-level':
             mtank_level = float(payload)
+
+        # Update temperature rate control variables
+        current_time = time.time()
+        if last_temp_update is not None and cstr_temp is not None:
+            time_diff = current_time - last_temp_update
+            temp_diff = cstr_temp - last_temp_value
+            rate_of_increase = temp_diff / time_diff if time_diff != 0 else 0
+            if rate_of_increase > 0.6 / 30:  # 0.6 degrees in 30 seconds
+                print("Temperature rising too fast, adjusting heater control")
+                # Implement logic to adjust heater control if necessary
+                # For simplicity, we can just turn off the heaters if the temperature is rising too fast
+                client.publish('cstr/heater1', 'off')
+                client.publish('cstr/heater2', 'off')
+
+        last_temp_update = current_time
+        last_temp_value = cstr_temp
 
         control_relays(client)
     elif topic in CONTROL_TOPICS:
@@ -88,6 +121,8 @@ def calculate_setpoint(start_time, set_temp, initial_temp, over_duration, temp_c
 def control_relays(client):
     global set_cstr_temp, over_duration, temp_change, start_time, max_attained_temp, last_states
 
+    refresh_settings()  # Check and refresh settings periodically
+
     if set_cstr_temp is None:
         set_cstr_temp, over_duration, temp_change = get_set_temperatures()
         if set_cstr_temp is None:
@@ -104,7 +139,10 @@ def control_relays(client):
             max_attained_temp = cstr_temp
 
         # Ensure temperature does not fall below the maximum attained temperature
-        current_setpoint = max(current_setpoint, max_attained_temp)
+        if max_attained_temp > set_cstr_temp:
+            current_setpoint = set_cstr_temp
+        else:
+            current_setpoint = max(current_setpoint, max_attained_temp)
 
         # Determine relay states
         heater1_state = 'off'
