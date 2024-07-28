@@ -8,6 +8,14 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
 import psycopg2
 from datetime import datetime, timedelta
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Set the DISPLAY environment variable for the timeseries app
+os.environ['DISPLAY'] = os.getenv('DISPLAY_TIMESERIES')
 
 # Initialize the main application
 app = ctk.CTk()
@@ -155,7 +163,7 @@ view_all_menu = tk.Menu(menu_bar, tearoff=0)
 menu_bar.add_command(label="View All", command=display_all_graphs)
 
 # Parameters
-parameters = ['cstr_ph', 'cstr_temp', 'cstr_level', 'cstr_orp', 'cstr_ec', 'cstr_tds', 'mtank_temp', 'mtank_level', 'mtank_weight', 'effluent_level', 'effluent_weight', 'flux']
+parameters = ['cstr_ph', 'cstr_temp', 'cstr_level', 'cstr_orp', 'cstr_ec', 'cstr_tds', 'mtank_temp', 'mtank_level', 'effluent_level', 'flux']
 
 # Add individual graph buttons
 for param in parameters:

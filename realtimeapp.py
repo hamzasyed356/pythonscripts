@@ -10,6 +10,13 @@ from datetime import datetime, timedelta
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import paho.mqtt.client as mqtt
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Set the DISPLAY environment variable for the realtime app
+os.environ['DISPLAY'] = os.getenv('DISPLAY_REALTIME')
 
 # MQTT Configuration
 MQTT_BROKER = "192.168.18.19"
