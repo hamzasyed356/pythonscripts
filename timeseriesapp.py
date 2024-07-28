@@ -158,7 +158,7 @@ for param in parameters:
 
 # Function to fetch data from the database
 def fetch_data(param, from_datetime, to_datetime):
-    query = f"SELECT timestamp, {param} FROM sensordata WHERE timestamp BETWEEN '{from_datetime}' AND '{to_datetime}' ORDER BY timestamp ASC"
+    query = f"SELECT timestamp, {param} FROM sensor_data WHERE timestamp BETWEEN '{from_datetime}' AND '{to_datetime}' ORDER BY timestamp ASC"
     cur.execute(query)
     data = cur.fetchall()
     if data:
