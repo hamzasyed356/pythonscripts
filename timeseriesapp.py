@@ -102,7 +102,7 @@ copyright_label = ctk.CTkLabel(master=footer_frame, text="All rights reserved ©
 copyright_label.grid(row=0, column=0, pady=10)
 
 # Create a scrollable frame for the graphs
-canvas = Canvas(app, bd=0, highlightthickness=0)  # Remove border and highlight thickness
+canvas = tk.Canvas(app, bd=0, highlightthickness=0)  # Remove border and highlight thickness
 scrollbar = Scrollbar(app, orient="vertical", command=canvas.yview)
 scrollable_frame = ctk.CTkFrame(canvas)
 
@@ -133,7 +133,7 @@ def clear_main_area():
 # Function to display all graphs
 def display_all_graphs():
     clear_main_area()
-    Canvas.grid(row=1, column=0, columnspan=4, sticky="nsew")
+    canvas.grid(row=1, column=0, columnspan=4, sticky="nsew")
     scrollbar.grid(row=1, column=4, sticky="ns")
 
 # Function to display individual graphs
