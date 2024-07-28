@@ -102,8 +102,8 @@ copyright_label = ctk.CTkLabel(master=footer_frame, text="All rights reserved ©
 copyright_label.grid(row=0, column=0, pady=10)
 
 # Create a scrollable frame for the graphs
-canvas = tk.Canvas(app, bd=0, highlightthickness=0)  # Remove border and highlight thickness
-scrollbar = tk.Scrollbar(app, orient="vertical", command=canvas.yview)
+canvas = Canvas(app, bd=0, highlightthickness=0)  # Remove border and highlight thickness
+scrollbar = Scrollbar(app, orient="vertical", command=canvas.yview)
 scrollable_frame = ctk.CTkFrame(canvas)
 
 scrollable_frame.bind(
@@ -140,7 +140,7 @@ def display_all_graphs():
 def display_graph(param):
     clear_main_area()
     timeseries_window = ctk.CTkFrame(app)
-    timeseries_window.grid(row=1, column=0, columnspan=4, sticky="nsew", padx=10, pady=10)
+    timeseries_window.pack(fill=tk.BOTH, expand=1, padx=10, pady=10)  # Using pack instead of grid
     
     input_frame = ctk.CTkFrame(timeseries_window)
     input_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
@@ -194,7 +194,7 @@ def display_graph(param):
 def display_combined_graph(param1, param2):
     clear_main_area()
     timeseries_window = ctk.CTkFrame(app)
-    timeseries_window.grid(row=1, column=0, columnspan=4, sticky="nsew", padx=10, pady=10)
+    timeseries_window.pack(fill=tk.BOTH, expand=1, padx=10, pady=10)  # Using pack instead of grid
 
     input_frame = ctk.CTkFrame(timeseries_window)
     input_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
@@ -366,6 +366,7 @@ def fetch_and_display(param, from_date_input, from_time_input, to_date_input, to
 def fetch_and_display_timeseries(param, from_datetime, to_datetime, canvas, figure, timeseries_window):
     data = fetch_data(param, from_datetime, to_datetime)
     if not data.empty:
+        figure.clear()
         ax = figure.add_subplot(111)
         ax.clear()
         ax.plot(data['timestamp'], data[param], marker='o', linestyle='-', label=param)
@@ -374,11 +375,13 @@ def fetch_and_display_timeseries(param, from_datetime, to_datetime, canvas, figu
         ax.set_ylabel(param)
         ax.legend()
         canvas.draw()
+        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)  # Using pack instead of grid
 
 # Function to fetch and display combined time series from the database
 def fetch_and_display_combined_timeseries(params, from_datetime, to_datetime, canvas, figure, timeseries_window):
     data = fetch_multiple_data(params, from_datetime, to_datetime)
     if not data.empty:
+        figure.clear()
         ax = figure.add_subplot(111)
         ax.clear()
         for param in params:
@@ -388,6 +391,8 @@ def fetch_and_display_combined_timeseries(params, from_datetime, to_datetime, ca
         ax.set_ylabel(", ".join(params))
         ax.legend()
         canvas.draw()
+        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)  # Using pack instead of grid
+
 
 # Function to fetch and display combined graphs
 def fetch_and_display_combined(param1, param2, from_date_input, from_time_input, to_date_input, to_time_input, canvas, figure, timeseries_window):
