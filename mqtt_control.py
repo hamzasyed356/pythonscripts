@@ -42,6 +42,7 @@ def get_set_temperatures_and_start_time():
         cursor.execute("SELECT set_temp, over_duration, temp_change, timestamp FROM temp_setting ORDER BY timestamp DESC LIMIT 1")
         result = cursor.fetchone()
         conn.close()
+        print(f"Fetched settings from DB: {result}")
         return result if result else (None, None, None, None)
     except Exception as e:
         print(f"Error fetching set temperatures and timestamp: {e}")
@@ -64,8 +65,10 @@ def on_message(client, userdata, msg):
 
         if topic == 'cstr-temp':
             cstr_temp = float(payload)
+            print(f"Received cstr-temp: {cstr_temp}")
         elif topic == 'mtank-temp':
             mtank_temp = float(payload)
+            print(f"Received mtank-temp: {mtank_temp}")
 
 # Function to calculate the current setpoint temperature
 def calculate_setpoint(start_timestamp, set_temp, initial_temp, over_duration, temp_change):
@@ -88,6 +91,7 @@ def control_cstr_relays(client):
     
     initial_temp = 28  # Assume an initial starting temperature; adjust as needed
     current_setpoint = calculate_setpoint(start_timestamp, set_cstr_temp, initial_temp, over_duration, temp_change)
+    print(f"Calculated current setpoint: {current_setpoint}")
 
     if cstr_temp is not None:
         # Determine relay states
@@ -102,6 +106,8 @@ def control_cstr_relays(client):
         if cstr_temp >= set_cstr_temp:
             heater1_state = 'off'
             heater2_state = 'off'
+
+        print(f"cstr_temp: {cstr_temp}, heater1_state: {heater1_state}, heater2_state: {heater2_state}")
 
         # Publish only if state has changed
         publish_if_changed(client, 'cstr/heater1', heater1_state)
@@ -123,6 +129,8 @@ def control_mtank_relays(client):
         elif abs(mtank_temp - cstr_temp) <= 1:
             cstr_in_state = 'on'
 
+        print(f"mtank_temp: {mtank_temp}, cstr_temp: {cstr_temp}, mtank_out_state: {mtank_out_state}")
+
         # Publish only if state has changed
         publish_if_changed(client, 'mtank/out', mtank_out_state)
         publish_if_changed(client, 'cstr/in', cstr_in_state)
@@ -130,6 +138,7 @@ def control_mtank_relays(client):
 # Function to publish to a topic if the state has changed
 def publish_if_changed(client, topic, state):
     if last_states[topic] != state:
+        print(f"Publishing {state} to {topic}")
         client.publish(topic, state)
         last_states[topic] = state
 
