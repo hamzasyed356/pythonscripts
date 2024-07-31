@@ -88,6 +88,9 @@ def cstr_control():
     temp_change = current_temp_settings["temp_change"]
     current_time = time.time()
 
+    if set_temp is None or temp_change is None or sensor_values["cstr-temp"] is None:
+        return
+
     # Ensure cstr/in is on by default
     publish_state("cstr/in", "on")
 
@@ -97,9 +100,10 @@ def cstr_control():
     if sensor_values["cstr-temp"] is not None:
         if (current_time - last_temp_change_time) >= 3600:  # Check every hour
             target_temp = sensor_values["cstr-temp"] + temp_change
+            print(target_temp)
             last_temp_change_time = current_time
 
-        if target_temp >= set_temp:
+        if target_temp is not None and target_temp >= set_temp:
             # Ensure the temperature does not fall below the set temperature
             if sensor_values["cstr-temp"] < set_temp:
                 publish_state("cstr/heater1", "on")
@@ -107,10 +111,10 @@ def cstr_control():
             elif sensor_values["cstr-temp"] >= set_temp:
                 publish_state("cstr/heater1", "off")
                 publish_state("cstr/heater2", "off")
-        else:
+        elif target_temp is not None:
             # Maintain temperature at target_temp
             if sensor_values["cstr-temp"] < target_temp:
-                if target_temp - sensor_values["cstr-temp"] > 2:  # Use both heaters if temperature difference is large
+                if target_temp - sensor_values["cstr-temp"] > 1.2:  # Use both heaters if temperature difference is large
                     publish_state("cstr/heater1", "on")
                     publish_state("cstr/heater2", "on")
                 else:  # Use only one heater for fine control
@@ -145,7 +149,6 @@ def mtank_control():
         elif sensor_values["mtank-level"] < 8500:
             publish_state("mtank/out", "off")
             publish_state("cstr/in", "on")
-
 
 # Periodic status update
 def periodic_status_update():
