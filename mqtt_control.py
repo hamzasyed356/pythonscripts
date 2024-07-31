@@ -2,6 +2,8 @@ import paho.mqtt.client as mqtt
 import psycopg2
 import time
 import threading
+from datetime import datetime, timedelta
+
 
 # MQTT settings
 broker = "192.168.18.19"
@@ -43,6 +45,10 @@ current_temp_settings = {
 }
 target_temp = None
 last_temp_change_time = time.time()
+# Global variables for last control change times
+last_mtank_out_change = datetime.now()
+last_cstr_in_change = datetime.now()
+
 
 # Hysteresis values
 hysteresis = 0.5  # Adjust as needed
@@ -90,9 +96,6 @@ def cstr_control():
 
     if set_temp is None or temp_change is None or sensor_values["cstr-temp"] is None:
         return
-
-    # Ensure cstr/in is on by default
-    publish_state("cstr/in", "on")
 
     if sensor_values["cstr-level"] is not None and sensor_values["cstr-level"] >= 26.5:
         publish_state("cstr/in", "off")
