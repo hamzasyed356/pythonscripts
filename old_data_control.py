@@ -50,7 +50,7 @@ sensor_data = {
 
 # Utility function to convert datetime to string
 def datetime_to_str(dt):
-    return dt.strftime('%Y-%m-%d %H:%M:%S') if dt else None
+    return dt.strftime('%Y-%m-%d %H:%M:%S')
 
 # MQTT callbacks
 def on_connect(client, userdata, flags, rc):
@@ -154,7 +154,7 @@ def upload_unpublished_data():
             for row in data:
                 ids.append(row[0])  # Assuming id is the first column
                 formatted_data.append({
-                    'timestamp': datetime_to_str(row[1]),
+                    'timestamp': row[1].strftime('%Y-%m-%d %H:%M:%S'),
                     'cstr_temp': row[2],
                     'cstr_level': row[3],
                     'cstr_ph': row[4],
@@ -182,7 +182,7 @@ def upload_unpublished_data():
             for row in temp_data:
                 temp_ids.append(row[0])  # Assuming id is the first column
                 formatted_temp_data.append({
-                    'timestamp': datetime_to_str(row[1]),
+                    'timestamp': row[1].strftime('%Y-%m-%d %H:%M:%S'),
                     'set_temp': row[2],
                     'over_duration': row[3],
                     'temp_change': row[4]
