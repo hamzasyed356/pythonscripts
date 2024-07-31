@@ -65,15 +65,15 @@ def get_temp_settings():
 def update_temp_settings():
     global current_temp_settings
     new_settings = get_temp_settings()
-    if new_settings != current_temp_settings:
+    if new_settings:
         current_temp_settings = {
             "set_temp": new_settings[0],
             "over_duration": new_settings[1],
             "temp_change": new_settings[2]
         }
-        # Reapply control logic with new settings
-        cstr_control()
-        mtank_control()
+    # Ensure control logic is applied with updated settings
+    cstr_control()
+    mtank_control()
 
 # Function to publish MQTT messages only on state change
 def publish_state(topic, state):
@@ -103,15 +103,19 @@ def cstr_control():
             # Ensure the temperature does not fall below the set temperature
             if sensor_values["cstr-temp"] < set_temp:
                 publish_state("cstr/heater1", "on")
-                publish_state("cstr/heater2", "on")
+                publish_state("cstr/heater2", "off")  # Use only one heater for fine control
             elif sensor_values["cstr-temp"] >= set_temp:
                 publish_state("cstr/heater1", "off")
                 publish_state("cstr/heater2", "off")
         else:
             # Maintain temperature at target_temp
             if sensor_values["cstr-temp"] < target_temp:
-                publish_state("cstr/heater1", "on")
-                publish_state("cstr/heater2", "on")
+                if target_temp - sensor_values["cstr-temp"] > 2:  # Use both heaters if temperature difference is large
+                    publish_state("cstr/heater1", "on")
+                    publish_state("cstr/heater2", "on")
+                else:  # Use only one heater for fine control
+                    publish_state("cstr/heater1", "on")
+                    publish_state("cstr/heater2", "off")
             else:
                 publish_state("cstr/heater1", "off")
                 publish_state("cstr/heater2", "off")
