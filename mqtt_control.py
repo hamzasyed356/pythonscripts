@@ -33,7 +33,8 @@ previous_states = {
     "cstr/in": None,
     "cstr/heater1": None,
     "cstr/heater2": None,
-    "mtank/out": None
+    "mtank/out": None,
+    "mtank/in": None
 }
 current_temp_settings = {
     "set_temp": None,
@@ -42,6 +43,9 @@ current_temp_settings = {
 }
 target_temp = None
 last_temp_change_time = time.time()
+
+# Hysteresis values
+hysteresis = 0.5  # Adjust as needed
 
 # Callback when a message is received
 def on_message(client, userdata, message):
@@ -84,6 +88,9 @@ def cstr_control():
     temp_change = current_temp_settings["temp_change"]
     current_time = time.time()
 
+    # Ensure cstr/in is on by default
+    publish_state("cstr/in", "on")
+
     if sensor_values["cstr-level"] is not None and sensor_values["cstr-level"] >= 25.5:
         publish_state("cstr/in", "off")
 
@@ -111,6 +118,9 @@ def cstr_control():
 
 # Mtank control logic
 def mtank_control():
+    # Ensure mtank/in is always on
+    publish_state("mtank/in", "on")
+
     if sensor_values["mtank-level"] is not None:
         if sensor_values["mtank-level"] > 9000:
             publish_state("mtank/out", "on")
@@ -120,10 +130,11 @@ def mtank_control():
             publish_state("cstr/in", "on")
 
     if sensor_values["mtank-temp"] is not None and sensor_values["cstr-temp"] is not None:
-        if sensor_values["mtank-temp"] <= (sensor_values["cstr-temp"] - 5):
+        # Apply hysteresis to prevent rapid switching
+        if sensor_values["mtank-temp"] <= (sensor_values["cstr-temp"] - 5 - hysteresis):
             publish_state("mtank/out", "on")
             publish_state("cstr/in", "off")
-        else:
+        elif sensor_values["mtank-temp"] >= (sensor_values["cstr-temp"] - 5 + hysteresis):
             publish_state("mtank/out", "off")
             publish_state("cstr/in", "on")
 
