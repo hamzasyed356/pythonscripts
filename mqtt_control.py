@@ -91,7 +91,7 @@ def cstr_control():
     # Ensure cstr/in is on by default
     publish_state("cstr/in", "on")
 
-    if sensor_values["cstr-level"] is not None and sensor_values["cstr-level"] >= 25.5:
+    if sensor_values["cstr-level"] is not None and sensor_values["cstr-level"] >= 26.5:
         publish_state("cstr/in", "off")
 
     if sensor_values["cstr-temp"] is not None:
