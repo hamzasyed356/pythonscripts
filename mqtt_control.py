@@ -4,7 +4,6 @@ import time
 import threading
 from datetime import datetime, timedelta
 
-
 # MQTT settings
 broker = "192.168.18.19"
 port = 1883
@@ -45,10 +44,6 @@ current_temp_settings = {
 }
 target_temp = None
 last_temp_change_time = time.time()
-# Global variables for last control change times
-last_mtank_out_change = datetime.now()
-last_cstr_in_change = datetime.now()
-
 
 # Hysteresis values
 hysteresis = 0.5  # Adjust as needed
@@ -69,7 +64,7 @@ def get_temp_settings():
 
 # Function to update temp settings
 def update_temp_settings():
-    global current_temp_settings
+    global current_temp_settings, last_temp_change_time, target_temp
     new_settings = get_temp_settings()
     if new_settings:
         current_temp_settings = {
@@ -77,6 +72,11 @@ def update_temp_settings():
             "over_duration": new_settings[1],
             "temp_change": new_settings[2]
         }
+        # Recalculate target_temp with new settings and reset last_temp_change_time
+        if sensor_values["cstr-temp"] is not None:
+            target_temp = sensor_values["cstr-temp"] + current_temp_settings["temp_change"]
+            last_temp_change_time = time.time()
+
     # Ensure control logic is applied with updated settings
     cstr_control()
     mtank_control()
