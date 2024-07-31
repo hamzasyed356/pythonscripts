@@ -125,7 +125,20 @@ def mtank_control():
     # Ensure mtank/in is always on
     publish_state("mtank/in", "on")
 
-    if sensor_values["mtank-level"] is not None:
+    temp_override = False
+
+    if sensor_values["mtank-temp"] is not None and sensor_values["cstr-temp"] is not None:
+        # Apply hysteresis to prevent rapid switching
+        if sensor_values["mtank-temp"] <= (sensor_values["cstr-temp"] - 5 - hysteresis):
+            publish_state("mtank/out", "on")
+            publish_state("cstr/in", "off")
+            temp_override = True
+        elif sensor_values["mtank-temp"] >= (sensor_values["cstr-temp"] - 5 + hysteresis):
+            publish_state("mtank/out", "off")
+            publish_state("cstr/in", "on")
+            temp_override = True
+
+    if not temp_override and sensor_values["mtank-level"] is not None:
         if sensor_values["mtank-level"] > 9000:
             publish_state("mtank/out", "on")
             publish_state("cstr/in", "off")
@@ -133,14 +146,6 @@ def mtank_control():
             publish_state("mtank/out", "off")
             publish_state("cstr/in", "on")
 
-    if sensor_values["mtank-temp"] is not None and sensor_values["cstr-temp"] is not None:
-        # Apply hysteresis to prevent rapid switching
-        if sensor_values["mtank-temp"] <= (sensor_values["cstr-temp"] - 5 - hysteresis):
-            publish_state("mtank/out", "on")
-            publish_state("cstr/in", "off")
-        elif sensor_values["mtank-temp"] >= (sensor_values["cstr-temp"] - 5 + hysteresis):
-            publish_state("mtank/out", "off")
-            publish_state("cstr/in", "on")
 
 # Periodic status update
 def periodic_status_update():
