@@ -35,7 +35,8 @@ previous_states = {
     "cstr/heater1": None,
     "cstr/heater2": None,
     "mtank/out": None,
-    "mtank/in": None
+    "mtank/in": None,
+    "mtank-recycle": None
 }
 current_temp_settings = {
     "set_temp": None,
@@ -137,6 +138,7 @@ def mtank_control():
     
     if sensor_values["mtank-level"] < 8000:
         # Ignore mtank-temp and prioritize filling until level reaches 8000 ml
+        publish_state("mtank-recycle", "No")
         publish_state("mtank/out", "off")
         publish_state("cstr/in", "on")
     else:
@@ -145,19 +147,23 @@ def mtank_control():
         if sensor_values["mtank-temp"] is not None and sensor_values["cstr-temp"] is not None:
             # Apply hysteresis to prevent rapid switching
             if sensor_values["mtank-temp"] <= (sensor_values["cstr-temp"] - 5 - hysteresis):
+                publish_state("mtank-recycle", "Yes")
                 publish_state("mtank/out", "on")
                 publish_state("cstr/in", "off")
                 temp_override = True
             elif sensor_values["mtank-temp"] >= (sensor_values["cstr-temp"] - 5 + hysteresis):
+                publish_state("mtank-recycle", "No")
                 publish_state("mtank/out", "off")
                 publish_state("cstr/in", "on")
                 temp_override = True
 
         if not temp_override and sensor_values["mtank-level"] is not None:
             if sensor_values["mtank-level"] > 8100:
+                publish_state("mtank-recycle", "Yes")
                 publish_state("mtank/out", "on")
                 publish_state("cstr/in", "off")
             elif sensor_values["mtank-level"] < 8100:
+                publish_state("mtank-recycle", "No")
                 publish_state("mtank/out", "off")
                 publish_state("cstr/in", "on")
 

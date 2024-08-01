@@ -24,8 +24,8 @@ MQTT_TOPICS = {
     "cstr-level": "cstr_level",
     "mtank-temp": "mtank_temp",
     "mtank-level": "mtank_level",
-    "mtank-weight": "mtank_weight",
-    "effluent-weight": "effluent_weight",
+    "mtank-recycle": "mtank_recycle",
+    "effluent-temp": "effluent_temp",
     "effluent-level": "effluent_level",
     "flux": "flux"
 }
