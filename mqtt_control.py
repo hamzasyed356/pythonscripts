@@ -135,7 +135,7 @@ def mtank_control():
     if sensor_values["mtank-level"] is None:
         return
     
-    if sensor_values["mtank-level"] < 8000:
+    if sensor_values["mtank-level"] < 8350:
         # Ignore mtank-temp and prioritize filling until level reaches 8000 ml
         publish_state("mtank/out", "off")
         publish_state("cstr/in", "on")
