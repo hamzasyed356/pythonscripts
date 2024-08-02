@@ -323,7 +323,7 @@ membrane_tank_params = [
 
 effluent_params = [
     ("Level", "effluent-level", "effluent_level", " mL"),
-    ("Weight", "effluent-weight", "effluent_weight", " g"),
+    ("Weight", "effluent-temp", "effluent_weight", " g"),
     ("Flux", "flux", "flux", " mL/min")
 ]
 
