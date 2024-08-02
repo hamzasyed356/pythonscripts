@@ -318,12 +318,12 @@ anaerobic_cstr_params = [
 membrane_tank_params = [
     ("Temp", "mtank-temp", "mtank_temp", " °C"),
     ("Level", "mtank-level", "mtank_level", " mL"),
-    ("Weight", "mtank-recycle", "mtank_recycle", " ")
+    ("Recycle", "mtank-recycle", "mtank_recycle", " ")
 ]
 
 effluent_params = [
     ("Level", "effluent-level", "effluent_level", " mL"),
-    ("Weight", "effluent-temp", "effluent_temp", " °C"),
+    ("Temp", "effluent-temp", "effluent_temp", " °C"),
     ("Flux", "flux", "flux", " mL/min")
 ]
 
