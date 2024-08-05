@@ -87,7 +87,7 @@ def on_message(client, userdata, msg):
 def calculate_flux(current_level, conn, mqtt_client):
     try:
         cursor = conn.cursor()
-        one_minute_ago = datetime.now() - timedelta(minutes=1)
+        one_minute_ago = datetime.now() - timedelta(minutes=10)
         query = '''
         SELECT effluent_level 
         FROM sensor_data 
