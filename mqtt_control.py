@@ -136,7 +136,7 @@ def mtank_control():
     if sensor_values["mtank-level"] is None:
         return
     
-    if sensor_values["mtank-level"] < 8000:
+    if sensor_values["mtank-level"] <= 8000:
         # Ignore mtank-temp and prioritize filling until level reaches 8000 ml
         publish_state("mtank-recycle", "No")
         publish_state("mtank/out", "off")
@@ -158,11 +158,11 @@ def mtank_control():
                 temp_override = True
 
         if not temp_override and sensor_values["mtank-level"] is not None:
-            if sensor_values["mtank-level"] > 8100:
+            if sensor_values["mtank-level"] > 8200:
                 publish_state("mtank-recycle", "Yes")
                 publish_state("mtank/out", "on")
                 publish_state("cstr/in", "off")
-            elif sensor_values["mtank-level"] < 8100:
+            elif sensor_values["mtank-level"] <= 8200:
                 publish_state("mtank-recycle", "No")
                 publish_state("mtank/out", "off")
                 publish_state("cstr/in", "on")
