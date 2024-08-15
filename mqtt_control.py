@@ -49,6 +49,9 @@ last_temp_change_time = time.time()
 # Hysteresis values
 hysteresis = 0.5  # Adjust as needed
 
+# Global maximum cstr level
+max_cstr_level = 25.0
+
 # Callback when a message is received
 def on_message(client, userdata, message):
     global sensor_values
@@ -88,7 +91,6 @@ def publish_state(topic, state):
         client.publish(topic, state)
         previous_states[topic] = state
 
-# CSTR control logic
 def cstr_control():
     global last_temp_change_time, target_temp
     set_temp = current_temp_settings["set_temp"]
@@ -98,8 +100,10 @@ def cstr_control():
     if set_temp is None or temp_change is None or sensor_values["cstr-temp"] is None:
         return
 
-    if sensor_values["cstr-level"] is not None and sensor_values["cstr-level"] >= 26.5:
-        publish_state("cstr/in", "off")
+    # Ensure cstr/in is off if cstr-level is above max_cstr_level
+    if sensor_values["cstr-level"] is not None:
+        if sensor_values["cstr-level"] >= max_cstr_level:
+            publish_state("cstr/in", "off")
 
     if sensor_values["cstr-temp"] is not None:
         if (current_time - last_temp_change_time) >= 3600:  # Check every hour
@@ -128,7 +132,7 @@ def cstr_control():
                 publish_state("cstr/heater1", "off")
                 publish_state("cstr/heater2", "off")
 
-# Mtank control logic
+
 def mtank_control():
     # Ensure mtank/in is always on
     publish_state("mtank/in", "on")
@@ -140,7 +144,9 @@ def mtank_control():
         # Ignore mtank-temp and prioritize filling until level reaches 8000 ml
         publish_state("mtank-recycle", "No")
         publish_state("mtank/out", "off")
-        publish_state("cstr/in", "on")
+        
+        if sensor_values["cstr-level"] is not None and sensor_values["cstr-level"] < max_cstr_level:
+            publish_state("cstr/in", "on")
     else:
         temp_override = False
 
@@ -149,23 +155,30 @@ def mtank_control():
             if sensor_values["mtank-temp"] <= (sensor_values["cstr-temp"] - 5 - hysteresis):
                 publish_state("mtank-recycle", "Yes")
                 publish_state("mtank/out", "on")
-                publish_state("cstr/in", "off")
+                
+                if sensor_values["cstr-level"] is not None and sensor_values["cstr-level"] < max_cstr_level:
+                    publish_state("cstr/in", "off")
                 temp_override = True
             elif sensor_values["mtank-temp"] >= (sensor_values["cstr-temp"] - 5 + hysteresis):
                 publish_state("mtank-recycle", "No")
                 publish_state("mtank/out", "off")
-                publish_state("cstr/in", "on")
+                
+                if sensor_values["cstr-level"] is not None and sensor_values["cstr-level"] < max_cstr_level:
+                    publish_state("cstr/in", "on")
                 temp_override = True
 
         if not temp_override and sensor_values["mtank-level"] is not None:
             if sensor_values["mtank-level"] > 8200:
                 publish_state("mtank-recycle", "Yes")
                 publish_state("mtank/out", "on")
-                publish_state("cstr/in", "off")
+                if sensor_values["cstr-level"] is not None and sensor_values["cstr-level"] < max_cstr_level:
+                    publish_state("cstr/in", "off")
             elif sensor_values["mtank-level"] <= 8200:
                 publish_state("mtank-recycle", "No")
                 publish_state("mtank/out", "off")
-                publish_state("cstr/in", "on")
+                if sensor_values["cstr-level"] is not None and sensor_values["cstr-level"] < max_cstr_level:
+                    publish_state("cstr/in", "on")
+
 
 # Periodic status update
 def periodic_status_update():
