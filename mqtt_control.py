@@ -50,7 +50,7 @@ last_temp_change_time = time.time()
 hysteresis = 0.5  # Adjust as needed
 
 # Global maximum cstr level
-max_cstr_level = 25.0
+max_cstr_level = 24.50
 
 # Callback when a message is received
 def on_message(client, userdata, message):
