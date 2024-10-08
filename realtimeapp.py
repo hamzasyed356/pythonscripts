@@ -9,8 +9,9 @@ from tkcalendar import DateEntry
 from datetime import datetime, timedelta
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import paho.mqtt.client as mqtt
+import threading
+import time
 import os
-
 
 # MQTT Configuration
 MQTT_BROKER = "192.168.18.19"
@@ -58,6 +59,7 @@ DB_USER = "postgres"
 DB_PASSWORD = "399584"
 DB_HOST = "localhost"
 DB_PORT = "5432"
+
 
 # Function to fetch data and display time series graph
 def fetch_and_display_timeseries(param, from_date, to_date, canvas, figure, parent_window):
@@ -162,8 +164,17 @@ def open_timeseries_window(param):
 # Example function to bind to a parameter frame click event
 def on_param_frame_click(param):
     open_timeseries_window(param)
+    
+# Function to publish settings to MQTT topics
+def publish_settings():
+    try:
+        mqtt_client.publish('set-temp', mqtt_values['set-temp'])
+        mqtt_client.publish('over-duration', mqtt_values['over-duration'])
+        mqtt_client.publish('temp-change', mqtt_values['temp-change'])
+    except Exception as e:
+        print(f"Error publishing settings: {e}")
 
-# Function to save settings to the database
+# Function to save settings to the database and publish them to MQTT
 def save_settings(set_temp_input, over_duration_input, temp_change_input, settings_window):
     set_temp = set_temp_input.get()
     over_duration = over_duration_input.get()
@@ -182,6 +193,13 @@ def save_settings(set_temp_input, over_duration_input, temp_change_input, settin
         conn.commit()
         cursor.close()
         conn.close()
+
+        # Update MQTT values and publish them
+        mqtt_values['set-temp'] = set_temp
+        mqtt_values['over-duration'] = over_duration
+        mqtt_values['temp-change'] = temp_change
+        publish_settings()
+
         messagebox.showinfo("Success", "Settings have been saved successfully.")
         settings_window.destroy()
     except Exception as e:
@@ -227,6 +245,17 @@ def open_settings():
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred while fetching settings: {e}")
         settings_window.destroy()
+
+# Function to periodically publish settings to MQTT topics every 30 seconds
+def periodically_publish_settings():
+    while True:
+        publish_settings()
+        time.sleep(30)
+
+# Start the periodic publishing in a separate thread
+thread = threading.Thread(target=periodically_publish_settings)
+thread.daemon = True
+thread.start()
 
 # Function to download data as CSV
 def download_data(from_date_input, to_date_input, download_window):
