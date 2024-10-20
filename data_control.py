@@ -107,11 +107,13 @@ def calculate_flux(current_level, conn, mqtt_client):
         else:
             flux = 0  # If no previous data is found, assume no change
 
+        flux = int(flux)  # Convert flux to an integer
         mqtt_client.publish(FLUX_TOPIC, flux)
         return flux
     except Exception as e:
         print(f"Error calculating flux: {e}")
         return 0
+
 
 # Function to save data to the PostgreSQL database
 def save_to_database(data, mqtt_client):
