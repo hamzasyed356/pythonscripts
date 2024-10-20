@@ -30,7 +30,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # MQTT configuration
 MQTT_BROKER = '192.168.18.19'
 MQTT_PORT = 1883
-MQTT_TOPICS = ['cstr-level', 'cstr-temp', 'cstr-ph', 'cstr-orp', 'cstr-ec', 'cstr-tds', 'mtank-level', 'mtank-temp', 'effluent-level']
+MQTT_TOPICS = ['cstr-level', 'cstr-temp', 'cstr-ph', 'cstr-orp', 'cstr-ec', 'cstr-tds', 'mtank-level', 'mtank-temp', 'effluent-level', 'weight']
 FLUX_TOPIC = 'flux'
 
 # Global variables to store sensor data
@@ -45,7 +45,8 @@ sensor_data = {
     'mtank_level': None,
     'effluent_level': None,
     'timestamp': None,
-    'published': False
+    'published': False,
+    'weight': None
 }
 
 # Utility function to convert datetime to string
@@ -82,6 +83,8 @@ def on_message(client, userdata, msg):
         sensor_data['mtank_level'] = float(payload)
     elif topic == 'effluent-level':
         sensor_data['effluent_level'] = float(payload)
+    elif topic == 'weight':
+        sensor_data['weight'] = float(payload)
 
 # Function to calculate flux
 def calculate_flux(current_level, conn, mqtt_client):
@@ -117,10 +120,10 @@ def save_to_database(data, mqtt_client):
         flux = calculate_flux(data['effluent_level'], conn, mqtt_client)
         cursor = conn.cursor()
         insert_query = '''
-        INSERT INTO sensor_data (timestamp, cstr_temp, cstr_level, cstr_ph, cstr_orp, cstr_ec, cstr_tds, mtank_temp, mtank_level, effluent_level, flux, published)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO sensor_data (timestamp, cstr_temp, cstr_level, cstr_ph, cstr_orp, cstr_ec, cstr_tds, mtank_temp, mtank_level, effluent_level, flux, published, weight)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         '''
-        cursor.execute(insert_query, (data['timestamp'], data['cstr_temp'], data['cstr_level'], data['cstr_ph'], data['cstr_orp'], data['cstr_ec'], data['cstr_tds'], data['mtank_temp'], data['mtank_level'], data['effluent_level'], flux, data['published']))
+        cursor.execute(insert_query, (data['timestamp'], data['cstr_temp'], data['cstr_level'], data['cstr_ph'], data['cstr_orp'], data['cstr_ec'], data['cstr_tds'], data['mtank_temp'], data['mtank_level'], data['effluent_level'], flux, data['published'], data['weight']))
         
         conn.commit()
         cursor.close()
@@ -164,7 +167,8 @@ def upload_unpublished_data():
                     'mtank_temp': row[8],
                     'mtank_level': row[9],
                     'effluent_level': row[10],
-                    'flux': row[11]
+                    'flux': row[11],
+                    'weight': row[12]
                 })
             response = upload_data_to_supabase(formatted_data)
             if response and response.data:

@@ -28,7 +28,8 @@ MQTT_TOPICS = {
     "mtank-recycle": "mtank_recycle",
     "effluent-temp": "effluent_temp",
     "effluent-level": "effluent_level",
-    "flux": "flux"
+    "flux": "flux",
+    "weight": "weight"
 }
 
 # Initialize MQTT values storage
@@ -352,7 +353,7 @@ membrane_tank_params = [
 
 effluent_params = [
     ("Level", "effluent-level", "effluent_level", " mL"),
-    ("Temp", "effluent-temp", "effluent_temp", " °C"),
+    ("Weight", "weight", "weight", " g"),
     ("Flux", "flux", "flux", " mL/min")
 ]
 
